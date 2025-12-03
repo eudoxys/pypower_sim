@@ -14,7 +14,8 @@ class PPPlots:
         self.model = model
 
     def voltage(self,
-        figsize=(15,8)):
+        figsize=None,
+        ):
 
         bus = self.model.get_data("bus")
 
