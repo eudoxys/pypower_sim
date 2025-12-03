@@ -31,5 +31,5 @@ jobs:
     - name: Run tests
       run: |
         cd test
-        pip install ../pypower_sim
+        pip install ..
         python3 test.py
