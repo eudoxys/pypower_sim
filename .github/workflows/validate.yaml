@@ -21,7 +21,6 @@ jobs:
     
     - name: Install packages
       run: |
-        cd pypower
         python3 -m pip install --upgrade pip -r requirements.txt pylint
 
     - name: Analyse code
