@@ -60,7 +60,7 @@ Load time-series inputs, outputs, and line recorders...
 Run time-series solution
 
     start = dt.datetime(2020,7,31,17,0,0,0,pytz.UTC)
-    end = dt.datetime(2020,8,31,16,0,0,0,pytz.UTC)
+    end = dt.datetime(2020,8,01,16,0,0,0,pytz.UTC)
     solver.run_timeseries(
         start=start,
         end=end,
