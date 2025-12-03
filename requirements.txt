@@ -1,0 +1,6 @@
+pandas
+openpyxl
+matplotlib
+git+https://github.com/eudoxys/pypower
+scipy
+git+https://github.com/eudoxys/geohash

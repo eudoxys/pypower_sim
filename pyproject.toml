@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools", "setuptools-scm"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pypower_sim"
+version = "0.0.0"
+authors = [
+    { name = "David P. Chassin", email = "dchassin@eudoxys.com" }
+]
+description = "PyPOWER time-series simulator"
+readme = "README.md"
+requires-python = ">=3.10"
+keywords = ["eudoxys","pypower","simulation","quasi-steady","timeseries"]
+license = "MIT"
+classifiers = [
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+]
+
+[tool.setuptools]
+packages = [
+    "pypower_sim"
+]
+
+[project.scripts]
+pypower_sim = "pypower_sim:main"
