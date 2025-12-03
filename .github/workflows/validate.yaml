@@ -26,7 +26,7 @@ jobs:
     - name: Analyse code
       run: |
         cd pypower_sim
-        pylint -fail 9 *.py
+        pylint --fail-under 9 *.py
 
     - name: Run tests
       run: |
