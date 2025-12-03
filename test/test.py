@@ -43,7 +43,7 @@ for test in [x for x in dir(cases) if x.startswith("test_")]:
             scale=test_model.case['baseMVA'],formatting=".2f")
 
         start = dt.datetime(2020,7,31,17,0,0,0,pytz.UTC)
-        end = dt.datetime(2020,8,01,16,0,0,0,pytz.UTC)
+        end = dt.datetime(2020,8,1,16,0,0,0,pytz.UTC)
 
         test_solver = PPSolver(test_model)
         test_solver.run_timeseries(
