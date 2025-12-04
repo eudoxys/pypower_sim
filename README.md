@@ -4,13 +4,32 @@
 
 PyPOWER timeseries simulation
 
+## Package architecture
+
+```mermaid
+flowchart LR
+
+    case(case) --> PPModel
+    inputs(csv) --> input[PPData]
+
+    subgraph pypower_sim
+        PPModel --> PPSolver
+        PPModel --> PPPlots
+        input --> PPSolver
+        PPSolver --> output[PPData]
+    end
+
+    PPPlots --> plots(png)
+    output --> outputs(csv)
+```
+
 ## Installation
 
     python3 -m venv .venv
     . .venv/bin/activate
     pip install git+https://github.com/eudoxys.com/pypower_sim
 
-## Running Examples
+## Examples
 
 Preparation...
 
@@ -41,7 +60,7 @@ Plot bus voltages...
     plotter = PPPlots(model)
     plotter.voltage().savefig(f"{test}_voltage.png")
 
-Load time-series inputs, outputs, and line recorders...
+Load time-series inputs, outputs, and recorders...
 
     from pypower_sim import PPData
     tapes = PPData(test_model)
