@@ -43,13 +43,13 @@ class KML:
 
         Arguments:
 
-        name: linestyle name
+        `name`: linestyle name
 
-        color: line color
+        `color`: line color
 
-        width: line width
+        `width`: line width
 
-        opacity: line opacity
+        `opacity`: line opacity
         """
         self.linestyle[name] = kwargs
 
@@ -58,11 +58,11 @@ class KML:
 
         Arguments:
 
-        name: markerstyle name
+        `name`: markerstyle name
 
-        icon: icon URL
+        `icon`: icon URL
 
-        scale: icon size
+        `scale`: icon size
         """
         self.markerstyle[name] = kwargs
 
@@ -82,15 +82,15 @@ class KML:
 
         Arguments:
 
-        name: line name
+        `name`: line name
 
-        from_position: line starting position
+        `from_position`: line starting position
 
-        to_position: line ending position:
+        `to_position`: line ending position:
 
-        style: line style
+        `style`: line style
 
-        data: line data
+        `data`: line data
         """
         self.line[name] = kwargs
 
@@ -99,13 +99,13 @@ class KML:
 
         Arguments:
 
-        name: marker name
+        `name`: marker name
 
-        position: marker position
+        `position`: marker position
 
-        style: marker style
+        `style`: marker style
 
-        data: marker data
+        `data`: marker data
         """
         self.marker[name] = kwargs
 
