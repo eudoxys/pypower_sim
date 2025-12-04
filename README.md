@@ -60,22 +60,22 @@ Plot bus voltages...
     from pypower_sim import PPPlots
 
     plotter = PPPlots(model)
-    plotter.voltage().savefig(f"{test}_voltage.png")
+    plotter.voltage().savefig("wecc240_voltage.png")
 
 Load time-series inputs, outputs, and recorders...
 
     from pypower_sim import PPData
     tapes = PPData(test_model)
 
-    tapes.set_input("bus","PD",f"load.csv",scale=10)
-    tapes.set_input("bus","QD",f"load.csv",scale=1)
-    tapes.set_output("bus","VM",f"{test}_bus_vm.csv",formatting=".3f")
+    tapes.set_input("bus","PD","load.csv",scale=10)
+    tapes.set_input("bus","QD","load.csv",scale=1)
+    tapes.set_output("bus","VM","wecc240_bus_vm.csv",formatting=".3f")
 
-    tapes.set_output("bus","VA",f"{test}_bus_va.csv",formatting=".4f")
-    tapes.set_output("bus","PD",f"{test}_bus_pd.csv",formatting=".4f")
-    tapes.set_output("bus","QD",f"{test}_bus_qd.csv",formatting=".4f")
+    tapes.set_output("bus","VA","wecc240_bus_va.csv",formatting=".4f")
+    tapes.set_output("bus","PD","wecc240_bus_pd.csv",formatting=".4f")
+    tapes.set_output("bus","QD","wecc240_bus_qd.csv",formatting=".4f")
 
-    test_data.set_recorder(f"{test}_cost.csv","cost",["cost"],
+    test_data.set_recorder("wecc240_cost.csv","cost",["cost"],
         scale=test_model.case['baseMVA'],formatting=".2f")
 
 Run time-series solution
