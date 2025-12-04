@@ -1,5 +1,7 @@
 [![validate](https://github.com/eudoxys/pypower_sim/actions/workflows/validate.yaml/badge.svg)](https://github.com/eudoxys/pypower_sim/actions/workflows/validate.yaml)
 
+For full documentation see https://www.eudoxys.com/pypower_sim.
+
 # pypower_sim
 
 PyPOWER timeseries simulation
