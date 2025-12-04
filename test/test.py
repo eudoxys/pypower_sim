@@ -12,11 +12,11 @@ import cases
 n_tests = 0
 n_failed = 0
 
-DEBUG = "--debug" in sys.argv
+DEBUG = "--debug" in sys.argv or __name__ == "__main__"
 
 for test in [x for x in dir(cases) if x.startswith("test_")]:
 
-    print(f"Run {test}",end="...",flush=True)
+    print(f"Running {test}",end="...",flush=True)
     n_tests += 1
 
     try:
@@ -51,6 +51,8 @@ for test in [x for x in dir(cases) if x.startswith("test_")]:
             end=end,
             freq="1h",
             )
+
+        test_model.save("test_model.txt")
 
         print("OK")
 

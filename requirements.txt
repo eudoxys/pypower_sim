@@ -3,4 +3,5 @@ openpyxl
 matplotlib
 git+https://github.com/eudoxys/pypower
 scipy
+pytz
 git+https://github.com/eudoxys/geohash

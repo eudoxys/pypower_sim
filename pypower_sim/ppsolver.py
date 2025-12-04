@@ -295,43 +295,43 @@ class PPSolver:
 
         return self.model.errors if self.model.errors else None
 
-if __name__ == "__main__":
+# if __name__ == "__main__":
 
-    from ppmodel import PPModel
-    from ppdata import PPData
-    from wecc240 import wecc240
-    import pytz
+#     from ppmodel import PPModel
+#     from ppdata import PPData
+#     from wecc240 import wecc240
+#     import pytz
 
-    test_model = PPModel(case=wecc240)
+#     test_model = PPModel(case=wecc240)
 
-    test_data = PPData(test_model)
+#     test_data = PPData(test_model)
 
-    test_data.set_input("bus","PD","tests/load.csv",scale=10)
-    test_data.set_input("bus","QD","tests/load.csv",scale=1)
+#     test_data.set_input("bus","PD","tests/load.csv",scale=10)
+#     test_data.set_input("bus","QD","tests/load.csv",scale=1)
 
-    test_data.set_output("bus","VM","results/bus_vm.csv",formatting=".3f")
-    test_data.set_output("bus","VA","results/bus_va.csv",formatting=".4f")
-    test_data.set_output("bus","PD","results/bus_pd.csv",formatting=".4f")
-    test_data.set_output("bus","QD","results/bus_qd.csv",formatting=".4f")
+#     test_data.set_output("bus","VM","results/bus_vm.csv",formatting=".3f")
+#     test_data.set_output("bus","VA","results/bus_va.csv",formatting=".4f")
+#     test_data.set_output("bus","PD","results/bus_pd.csv",formatting=".4f")
+#     test_data.set_output("bus","QD","results/bus_qd.csv",formatting=".4f")
 
-    test_data.set_recorder("results/cost.csv","cost",["cost"],
-        scale=test_model.case['baseMVA'],formatting=".2f")
-    test_data.set_recorder("results/cost.csv","cost_pumva",["cost"],
-        formatting=".2f")
+#     test_data.set_recorder("results/cost.csv","cost",["cost"],
+#         scale=test_model.case['baseMVA'],formatting=".2f")
+#     test_data.set_recorder("results/cost.csv","cost_pumva",["cost"],
+#         formatting=".2f")
 
-    start = dt.datetime(2020,7,31,17,0,0,0,pytz.UTC)
-    end = dt.datetime(2020,8,31,16,0,0,0,pytz.UTC)
+#     start = dt.datetime(2020,7,31,17,0,0,0,pytz.UTC)
+#     end = dt.datetime(2020,8,31,16,0,0,0,pytz.UTC)
 
-    test_solver = PPSolver(test_model)
+#     test_solver = PPSolver(test_model)
 
-    print(f"Running timeseries solution from {start} to {end}",end="")
-    test_solver.run_timeseries(
-        start=start,
-        end=end,
-        freq="1h",
-        progress=lambda x:print(flush=True,end="."),
-        stop_on_fail=False,
-        )
+#     print(f"Running timeseries solution from {start} to {end}",end="")
+#     test_solver.run_timeseries(
+#         start=start,
+#         end=end,
+#         freq="1h",
+#         progress=lambda x:print(flush=True,end="."),
+#         stop_on_fail=False,
+#         )
 
-    print("done")
-    print(pd.DataFrame({"Value":test_model.profile.values()},test_model.profile.keys()))
+#     print("done")
+#     print(pd.DataFrame({"Value":test_model.profile.values()},test_model.profile.keys()))
