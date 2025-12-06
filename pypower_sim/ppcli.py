@@ -13,7 +13,12 @@ class PPCLI(argparse.ArgumentParser):
     E_SYNTAX = 1
 
     def __init__(self):
-        """CLI constructor/processor"""
+        """CLI constructor/processor
+
+        Arguments:
+
+        (none)
+        """
         super().__init__(
             description=__doc__.split("\n",maxsplit=1)[0],
             epilog="\n".join(__doc__.split("\n")[1:])
@@ -21,6 +26,7 @@ class PPCLI(argparse.ArgumentParser):
 
         self.filename = None
         self.case = None
+        self.model = None
 
         # required arguments
         self.add_argument("filename")
@@ -36,11 +42,9 @@ class PPCLI(argparse.ArgumentParser):
 
         self.parse_args()
 
-        module = importlib.import_module(self.filename)
-        self.model = PPModel(case=getattr(module,self.case))
+        if self.filename:
+            module = importlib.import_module(self.filename)
+            if self.case:
+                self.model = PPModel(case=getattr(module,self.case))
 
         self.exitcode = 0
-
-if __name__ == "__main__":
-
-    PPCLI()

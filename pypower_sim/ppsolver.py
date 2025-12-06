@@ -41,15 +41,15 @@ class PPSolver:
 
         Arguments:
 
-        update: when to update of model case data ('always','success','failure')
+            - `update`: when to update of model case data ('always','success','failure')
 
-        with_result: include result in return value
+            - `with_result`: include result in return value
 
         Returns:
 
-        bool: True on success, False on failure
+            - `bool`: True on success, False on failure
 
-        dict: result (if with_result is True)
+            - `dict`: result (if with_result is True)
         """
         assert update in ["always","success","failure"], f"{update=} is invalid"
         result,status = runpf(self.model.case,ppoption(**self.model.options))
@@ -72,17 +72,17 @@ class PPSolver:
 
         Arguments:
 
-        use_acopf: enable AC OPF solution
+            - `use_acopf`: enable AC OPF solution
 
-        update: when update of model case data ('always','success','failure')
+            - `update`: when update of model case data ('always','success','failure')
         
-        with_result: include result in return value
+            - `with_result`: include result in return value
 
         Returns:
 
-        bool: True on success, False on failure
+            - `bool`: True on success, False on failure
 
-        dict: result (if with_result is True)
+            - `dict`: result (if with_result is True)
         """
         assert use_acopf in [True,False], f"{use_acopf=} is invalid"
         assert update in ["always","success","failure"], f"{update=} is invalid"
@@ -104,7 +104,7 @@ class PPSolver:
 
         Arguments:
 
-        t: the current date/time
+            - `t`: the current date/time
         """
         # update inputs
         errors = 0
@@ -130,9 +130,9 @@ class PPSolver:
 
         Arguments:
 
-        t: the current date/time
+            - `t`: the current date/time
 
-        ts_format: timestamp format
+            - `ts_format`: timestamp format
         """
         ts = t.strftime(ts_format)
 
@@ -173,30 +173,30 @@ class PPSolver:
         stop_on_fail:bool=True,
         stop_test:Callable=None,
         use_acopf:bool=False,
-        **kwargs) -> list[str]|None:
+        **kwargs) -> str|list[str]|None:
         """Run a timeseries simulation
 
         Arguments:
 
         *args, **kwargs: See pandas.date_range()
 
-        progress: set a progress callback function
+            - `progress`: set a progress callback function
 
-        call_on_fail: set a call-on-fail function
+            - `call_on_fail`: set a call-on-fail function
 
-        stop_on_fail: enable stop-on-fail condition
+            - `stop_on_fail`: enable stop-on-fail condition
 
-        stop_test: set a stop test call back function
+            - `stop_test`: set a stop test call back function
 
-        use_acopf: enable use of AC OPF instead of DC OPF
+            - `use_acopf`: enable use of AC OPF instead of DC OPF
 
         Returns:
 
-        None: No errors to report
+            - `None`: No errors to report
 
-        str: Error message (when stop_on_fail is True)
+            - `str`: Error message (when stop_on_fail is True)
 
-        list[str]: Error messages (when stop_on_fail is False)
+            - `list[str]`: Error messages (when stop_on_fail is False)
         """
 
         assert progress is None or callable(progress), \

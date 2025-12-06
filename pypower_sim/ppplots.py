@@ -1,21 +1,36 @@
 """PyPower model graphic"""
 
-from .ppmodel import PPModel
+from typing import TypeVar
 import matplotlib.pyplot as plt
+from .ppmodel import PPModel
 
 class PPPlots:
-
+    """Plot creation class implementation"""
     figsize = (15,8)
 
     def __init__(self,
         model:PPModel,
         ):
+        """Plot creator constructor
 
+        Arguments:
+
+            - `model`: pypower_sim model
+        """
         self.model = model
 
     def voltage(self,
-        figsize=None,
-        ):
+        figsize:tuple[int,int]=None,
+        ) -> TypeVar('matplotlib.pyplot.figure'):
+        """Generate voltage profile
+
+        Arguments:
+
+            - `figsize`: figure dimensions
+        Returns:
+
+            - `matplotlib.pyplot.figure`: voltage profile figure
+        """
 
         bus = self.model.get_data("bus")
 
@@ -44,7 +59,17 @@ class PPPlots:
         return fig
 
     def generation(self,
-        figsize=None):
+        figsize:tuple[int,int]=None,
+        ) -> TypeVar('matplotlib.pyplot.figure'):
+        """Generate generation profile
+
+        Arguments:
+
+            - `figsize`: figure dimensions
+        Returns:
+
+            - `matplotlib.pyplot.figure`: voltage profile figure
+        """
 
         bus = self.model.get_data("gen")
 
@@ -73,7 +98,17 @@ class PPPlots:
         return fig
 
     def load(self,
-        figsize=(15,8)):
+        figsize:tuple[int,int],
+        ) -> TypeVar('matplotlib.pyplot.figure'):
+        """Generate load profile
+
+        Arguments:
+
+            - `figsize`: figure dimensions
+        Returns:
+
+            - `matplotlib.pyplot.figure`: voltage profile figure
+        """
 
         bus = self.model.get_data("bus")
 

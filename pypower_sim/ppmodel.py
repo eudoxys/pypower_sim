@@ -175,13 +175,13 @@ class PPModel:
 
         Arguments:
 
-        name: name of the case
+            - `name`: name of the case
 
-        version: case version number
+            - `version`: case version number
 
-        mvabase: MVA base value
+            - `mvabase`: MVA base value
 
-        case: case data
+            - `case`: case data
         """
 
         # pylint: disable=too-many-instance-attributes
@@ -217,9 +217,9 @@ class PPModel:
 
         Arguments:
 
-        idx: module containing index values
+            - `idx`: module containing index values
 
-        ignore: list of index values to ignore
+            - `ignore`: list of index values to ignore
 
         Returns:
 
@@ -253,7 +253,10 @@ class PPModel:
         }
 
     def from_dict(self,data:dict):
-        """Convert dict to model"""
+        """Convert dict to model
+
+            - `data`: source data
+        """
         assert data["application"] == "pypower_sim", "JSON is not a pypower_sim model"
         assert data["version"] <= pkg_version("pypower_sim"), \
             "JSON model is from a newer version of pypower_sim, " \
@@ -278,7 +281,20 @@ class PPModel:
         self.profile = data["profile"] if "profile" in data else None
 
     def to_json(self,*args,**kwargs) -> str|None:
-        """Convert model to JSON"""
+        """Convert model to JSON
+
+        Arguments:
+
+            - `*args`: see json.dump()
+
+            - `**kwargs`: see json.dump()
+
+        Returns:
+
+            - `str`: JSON data if no `fh` is specified
+
+            - None: if `fh` is specified
+        """
         return json.dump(self.to_dict(),cls=PypowerModelEncoder,*args,**kwargs)
 
     def from_json(self,*args,**kwargs):
@@ -292,7 +308,7 @@ class PPModel:
 
         Arguments:
 
-        file: file handle, name, or None to return data
+            - `file`: file handle, name, or None to return data
         """
 
         if isinstance(file,str):
@@ -315,7 +331,7 @@ class PPModel:
 
         Arguments:
 
-        file: file handle, name, or None for stdin
+            - `file`: file handle, name, or None for stdin
         """
         if isinstance(file,str):
             with open(file,"r",encoding="utf-8") as fh:
@@ -337,11 +353,11 @@ class PPModel:
 
         Arguments:
 
-        case: case data to use
+            - `case`: case data to use
 
         Returns:
 
-        self: the model with the newly set case data
+            - `self`: the model with the newly set case data
         """
         self.case = case
         return self
@@ -354,9 +370,9 @@ class PPModel:
 
         Arguments:
 
-        file: file handle to which case data is saved
+            - `file`: file handle to which case data is saved
 
-        precision: float rounding precision
+            - `precision`: float rounding precision
         """
         print(f"""# pypower case '{self.name}' saved on {dt.datetime.now()}
 from numpy import array
@@ -437,9 +453,9 @@ def {self.name}():
 
         Arguments:
 
-        filename: KML filename of output
+            - `filename`: KML filename of output
 
-        use_geocode: marker names are geocode instead of bus id
+            - `use_geocode`: marker names are geocode instead of bus id
         """
         kml = KML(filename)
 
@@ -501,12 +517,12 @@ def {self.name}():
 
         Arguments:
 
-        kwargs: merged bus, load, and shunt data (see pypower.idx_bus for
-                details)
+            - `kwargs`: merged bus, load, and shunt data (see `pypower.idx_bus` for
+              details)
 
         Returns:
 
-        np.array: bus data
+            - `numpy.array`: bus data
         """
 
         header = PPModel.get_header("bus")
@@ -530,12 +546,12 @@ def {self.name}():
 
         Arguments:
 
-        kwargs: merged branch and transformer data (see pypower.idx_brch for
-                details)
+            - `kwargs`: merged branch and transformer data (see `pypower.idx_brch` for
+              details)
 
         Returns:
 
-        np.array: bus data
+            - `numpy.array`: bus data
         """
         header = PPModel.get_header("branch")
         for key,value in kwargs.items():
@@ -558,11 +574,11 @@ def {self.name}():
 
         Arguments:
 
-        kwargs: generation data (see pypower.idx_gen for details)
+            - `kwargs`: generation data (see `pypower.idx_gen` for details)
 
         Returns:
 
-        np.array: gen data
+            - `numpy.array`: gen data
         """
 
         result = []
@@ -580,11 +596,11 @@ def {self.name}():
 
         Arguments:
 
-        kwargs: generation data (see pypower.idx_gen for details)
+            - `kwargs`: generation data (see `pypower.idx_gen` for details)
 
         Returns:
 
-        np.array: cost data
+            - `numpy.array`: cost data
         """
 
         result = []
@@ -607,11 +623,11 @@ def {self.name}():
 
         Arguments:
 
-        kwargs: dcline data (see pypower.idx_dcline for details)
+            - `kwargs`: dcline data (see `pypower.idx_dcline` for details)
 
         Returns:
 
-        np.array: dcline data
+            - `numpy.array`: dcline data
         """
         result = []
         for item in PPModel.get_header("dcline"):
@@ -628,11 +644,11 @@ def {self.name}():
 
         Arguments:
 
-        kwargs: dclinecost data (see pypower.idx_cost for details)
+            - `kwargs`: dclinecost data (see `pypower.idx_cost` for details)
 
         Returns:
 
-        np.array: cost data
+            - `numpy.array`: cost data
         """
 
         result = []
@@ -653,7 +669,7 @@ def {self.name}():
 
         Returns:
 
-        dict: table of model information
+            - `dict`: table of model information
         """
         bus = self.get_data("bus")
         gengis = pd.merge(
@@ -685,11 +701,11 @@ def {self.name}():
 
         Arguments:
 
-        name: name of case data to return (e.g., "bus","branch","gis", etc.)
+            - `name`: name of case data to return (e.g., "bus","branch","gis", etc.)
 
         Returns:
 
-        pandas.DataFrame: case data requested with data types (see types_idx)
+            - `pandas.DataFrame`: case data requested with data types (see `types_idx`)
         """
         assert name in self.standard_idx, f"'{name}' is not a valid data item name"
         width = self.case[name].shape[1]
@@ -711,7 +727,7 @@ def {self.name}():
 
         Returns:
 
-        pandas.DataFrame: case GIS data (no index, sorted by row number)
+            - `pandas.DataFrame`: case GIS data (no index, sorted by row number)
         """
         return self.get_data("gis").reset_index().sort_index()
 
@@ -723,13 +739,13 @@ def {self.name}():
 
         Arguments:
 
-        bustype: bus type of get (i.e., idx_bus.PQ, idx_bus.PV, idx_bus.REF)
+            - `bustype`: bus type of get (i.e., `idx_bus.PQ`, `idx_bus.PV`, `idx_bus.REF`)
 
-        index: index to use (merge with GIS data if index in GIS columns)
+            - `index`: index to use (merge with GIS data if index in GIS columns)
 
         Returns:
 
-        pandas.DataFrame: bus data
+            - `pandas.DataFrame`: bus data
         """
         bus = self.get_data("bus")
         if index in self.get_header("bus"):
@@ -746,11 +762,11 @@ def {self.name}():
 
         Arguments:
 
-        data: dataframe from use ("gis" if None)
+            - `data`: dataframe from use ("gis" if None)
 
         Returns:
 
-        dict: table of nodes and bus ids
+            - `dict`: table of nodes and bus ids
         """
         nodes = {}
         for n,data in (self.get_gis() if data is None else data)[
@@ -770,13 +786,13 @@ def {self.name}():
 
         Arguments:
 
-        level: "BUS","NODE","ZONE","AREA"
+            - `level`: "BUS","NODE","ZONE","AREA"
 
-        nodes: return node type (None, "nearest", "centroid")
+            - `nodes`: return node type (None, "nearest", "centroid")
 
         Returns:
 
-        links: list of link tuples indexes into bus data in order of branch
+            - `links`: list of link tuples indexes into bus data in order of branch
         data
         """
         nodes = pd.merge(self.get_data("bus"),

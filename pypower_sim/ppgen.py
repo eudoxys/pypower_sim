@@ -50,7 +50,19 @@ GENDATA = ['state', 'county', 'node', 'bus', 'fuel', 'gen', 'operating_capacity'
        'index', 'variable_cost', 'fixed_cost']
 
 class PPGen:
-    """Abstract class for generator data"""
+    """Abstract class for generator data
+
+    Usage:
+
+    To use this class, implement a derived class in which you set the data, e.g.,
+
+            from pypower_sim.ppgen import PPGen
+            import pandas as pd
+            class mygendata(PPGen):
+                def __init__(self,df:pd.DataFrame):
+                    self.data = df
+                    super().init()
+    """
 
     # set of valid columns, data type, and defaults in dataframe
     valid_columns = {
@@ -86,9 +98,9 @@ class PPGen:
 
         Arguments:
 
-        source: source of data
+            - `source`: source of data
 
-        cache: path name to cache
+            - `cache`: path name to cache
         """
 
         # verify source and cache specs
@@ -139,18 +151,22 @@ class PPGen:
 
         Arguments:
 
-        case: pypower case data tables
+            - `case`: pypower case data tables
 
-        ignore_bustype: flag to disable limiting nearest bus search based on bustype
+            - `ignore_bustype`: flag to disable limiting nearest bus search based on bustype
 
-        exclude: table of exclusions
+            - `exclude`: table of exclusions
 
-        groupby: data groupings in addition to bus id
+            - `groupby`: data groupings in addition to bus id
 
-        converters: value converters to apply to data columns before groups
+            - `converters`: value converters to apply to data columns before groups
 
-        index_csv: CSV file to which gen info is written, same order as gen
-        rows, index refers back to data rows
+            - `index_csv`: CSV file to which gen info is written, same order as gen
+              rows, index refers back to data rows
+        
+        Returns:
+
+            - `pandas.DataFrame`: generator cost data
         """
 
         # pylint: disable=too-many-locals,too-many-branches,too-many-statements
@@ -277,8 +293,11 @@ class PPGen:
 
         Arguments:
 
-        case: pypower case data tables
+            - `case`: pypower case data tables
 
+        Returns:
+
+            - `pandas.DataFrame`: generator cost data
         """
         assert "version" in case and case["version"] == 2, \
             f"{case.version=} is not supported"

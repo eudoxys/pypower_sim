@@ -9,6 +9,7 @@ from .ppmodel import PPModel
 from .ppplots import PPPlots
 from .ppsolver import PPSolver
 from .ppcli import PPCLI
+from .ppjson import PypowerModelDecoder, PypowerModelEncoder
 
 def main(*args,**kwargs):
     """Main command line processor"""

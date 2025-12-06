@@ -5,12 +5,21 @@ import json
 import pytz
 import numpy as np
 import pandas as pd
+from typing import Any
 
 # pylink: disable=invalid-name
 class PypowerModelEncoder(json.JSONEncoder):
     """Implements pypower_sim data encoder for JSON"""
-    def default(self, o):
+    def default(self, o) -> int|float|bool|str|None:
         """Default JSON encoder for pypower_sim
+
+        Arguments:
+
+            - `o`: object to convert
+
+        Returns:
+
+            - `object`: converted object
 
         Caveat: tuples are converted by list to json before this call so you
         must encode tuples explicitly using `{"type":"tuple","data":data}`.
@@ -81,8 +90,17 @@ class PypowerModelEncoder(json.JSONEncoder):
         return json.JSONEncoder.default(self, o)
 
 # pylint: disable=invalid-name
-def PypowerModelDecoder(data):
-    """Convert JSON data back to pypower_sim data"""
+def PypowerModelDecoder(data) -> Any:
+    """Convert JSON data back to pypower_sim data
+
+    Arguments:
+
+        * `data`: JSON data to convert back to pypower_sim object
+    
+    Returns:
+
+        * `varies`: pypower_sim object
+    """
 
     # pylint: disable=too-many-return-statements
 
