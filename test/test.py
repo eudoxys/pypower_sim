@@ -21,12 +21,12 @@ for test in [x for x in dir(cases) if x.startswith("test_")]:
 
     try:
         
-        test_model = PPModel(case=getattr(cases,test))
+        test_model = PPModel(name="test_model",case=getattr(cases,test))
         
         solver=PPSolver(test_model)
-        solver.solve_opf()
-        solver.solve_opf(use_acopf=True)
-        solver.solve_pf(with_result=True)
+        assert solver.solve_opf(), "DC OPF failed"
+        assert solver.solve_opf(use_acopf=True), "AC OPF failed"
+        assert solver.solve_pf(), "Powerflow failed"
 
         plots = PPPlots(test_model)
         plots.voltage().savefig(f"{test}_voltage.png")
@@ -38,21 +38,29 @@ for test in [x for x in dir(cases) if x.startswith("test_")]:
         tapes.set_output("bus","VA",f"{test}_bus_va.csv",formatting=".4f")
         tapes.set_output("bus","PD",f"{test}_bus_pd.csv",formatting=".4f")
         tapes.set_output("bus","QD",f"{test}_bus_qd.csv",formatting=".4f")
-
         tapes.set_recorder(f"{test}_cost.csv","cost",["cost"],
             scale=test_model.case['baseMVA'],formatting=".2f")
 
+        test_solver = PPSolver(test_model)
         start = dt.datetime(2020,7,31,17,0,0,0,pytz.UTC)
         end = dt.datetime(2020,8,1,16,0,0,0,pytz.UTC)
-
-        test_solver = PPSolver(test_model)
-        test_solver.run_timeseries(
+        assert test_solver.run_timeseries(
             start=start,
             end=end,
             freq="1h",
-            )
+            # progress=lambda x: print(x,flush=True),
+            ) is None, "original timeseries simulation failed"
 
-        test_model.save("test_model.txt")
+        assert solver.solve_pf(), "Powerflow failed after load()"
+
+        test_model.save("test_model.json")
+        test_model.load("test_model.json")
+        assert test_solver.run_timeseries(
+            start=start,
+            end=end,
+            freq="1h",
+            # progress=lambda x: print(x,flush=True),
+            ) is None, "loaded timeseries simulation failed"
 
         print("OK")
 

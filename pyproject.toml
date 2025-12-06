@@ -28,7 +28,7 @@ packages = [
 ]
 
 [project.scripts]
-pypower_sim = "pypower_sim:main"
+ppsim = "pypower_sim:main"
 
 [project.urls]
 Homepage = "https://github.com/eudoxys/pypower_sim"

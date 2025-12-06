@@ -100,10 +100,3 @@ class PPPlots:
         plt.suptitle(f"{self.model.name} Generation")
 
         return fig
-
-
-# if __name__ == "__main__":
-#     from wecc240 import wecc240
-#     model = PPModel("WECC 240",case=wecc240(options=["SCHEDULING"]))
-#     plotter = PPPlots(model)
-#     plotter.voltage().show()

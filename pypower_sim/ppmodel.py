@@ -70,7 +70,7 @@ from pypower import idx_cost as idx_gencost
 
 from .ppdata import PPData
 from .ppsolver import PPSolver
-
+from .ppjson import PypowerModelEncoder, PypowerModelDecoder
 from .kml import KML
 
 idx_dclinecost = idx_gencost
@@ -116,71 +116,6 @@ class idx_gis:
     NAME = 4 # bus name
     GEN = 5 # generator count (nan: no gen allowed)
     LOAD = 6 # load count (nan: no load allowed)
-
-class PypowerModelEncoder(json.JSONEncoder):
-    """Implements pypower_sim data encoder for JSON"""
-    def default(self, obj):
-        """Default JSON encoder for pypower_sim"""
-
-        if isinstance(obj, np.integer):
-        
-            return int(obj)
-        
-        elif isinstance(obj, np.floating):
-        
-            return float(obj)
-        
-        elif isinstance(obj, np.ndarray):
-        
-            return {"type": "array", "data": obj.tolist()}
-        
-        elif isinstance(obj,(tuple,set)):
-        
-            return list(obj)
-        
-        elif isinstance(obj,pd.DataFrame):
-            return {
-                "type": "dataframe",
-                "data" : {
-                    "names": list(obj.columns),
-                    "index": {
-                        "name": list(obj.index.names),
-                        "keys": ["|".join(x) if isinstance(x,tuple) else x for x in obj.index],
-                        },
-                    "data":obj.values.tolist(),
-                    },
-                }
-        
-        elif isinstance(obj,dict) and [isinstance(x,tuple) for x in obj.keys()].any():
-        
-            return {"|".join(x):y for x,y in obj.items()}
-        
-        elif isinstance(obj,pd.Timestamp):
-        
-            return obj.strftime("%Y-%m-%d %H:%M:%S %Z")
-        
-        elif isinstance(obj,pd.Index):
-        
-            return obj.values.tolist()
-        
-        elif isinstance(obj,io.TextIOWrapper):
-        
-            return {
-                "type": "file",
-                "name": obj.name,
-                "mode": obj.mode,
-                }
-        
-        elif callable(obj):
-        
-            return {
-                "type": "function",
-                "name": obj.__name__,
-                "args": obj.__code__.co_varnames,
-                "code": obj.__code__.co_code.hex(),
-                }
-
-        return json.JSONEncoder.default(self, obj)
 
 class PPModel:
     """PyPower Model Access"""
@@ -302,8 +237,8 @@ class PPModel:
             "indexes are not strictly sequential"
         return [mapping[n] for n in indexes]
 
-    def to_dict(self):
-
+    def to_dict(self) -> dict:
+        """Convert model to a dict"""
         return {
             "application": "pypower_sim",
             "version": version("pypower_sim"),
@@ -317,8 +252,36 @@ class PPModel:
             "profile": self.profile,
         }
 
+    def from_dict(self,data:dict):
+        """Convert dict to model"""
+        assert data["application"] == "pypower_sim", "JSON is not a pypower_sim model"
+        assert data["version"] <= version("pypower_sim"), \
+            "JSON model is from a newer version of pypower_sim, " \
+            "you should update pypower_sim to at least that version"
+        
+        self.name = data["name"] if "name" in data else "unnamed"
+
+        # extract case data and convert back to ndarray
+        assert "case" in data, "JSON model does not contain a case"
+        arrays = ["bus","branch","gen","gencost","dcline","dclinecost"]
+        self.case = {x:(PypowerModelDecoder(y) if x in arrays else y) for x,y in data["case"].items()}
+
+        self.inputs = {tuple(x.split("|")):PypowerModelDecoder(y) 
+            for x,y in data["inputs"].items()} if "inputs" in data else {}
+        self.outputs = {x:PypowerModelDecoder(y) 
+            for x,y in data["outputs"].items()} if "outputs" in data else {}
+        self.recorders = {x:PypowerModelDecoder(y) 
+            for x,y in data["recorders"].items()} if "recorders" in data else {}
+
+        self.options = data["options"] if "options" in data else {}
+        self.errors = data["errors"] if "errors" in data else []
+        self.profile = data["profile"] if "profile" in data else None
+
     def to_json(self,*args,**kwargs):
         return json.dump(self.to_dict(),cls=PypowerModelEncoder,*args,**kwargs)
+
+    def from_json(self,*args,**kwargs):
+        self.from_dict(json.load(*args,**kwargs))
 
     def save(self,
         file:io.StringIO|str|None=None,
@@ -342,6 +305,28 @@ class PPModel:
             return
 
         raise ValueError(f"{file=} is not writable")
+
+    def load(self,
+        file:io.StringIO|str|None=None,
+        ):
+        """Load the model from a file
+
+        Arguments:
+
+        file: file handle, name, or None for stdin
+        """
+        if isinstance(file,str):
+            with open(file,"r") as fh:
+                return self.load(fh)
+
+        if file is None:
+            return self.load(sys.stdin)
+
+        if hasattr(file,"readable") and file.readable():
+            self.from_json(file)
+            return
+
+        raise ValueError(f"{file=} is not readable")
 
     def set_case(self,
         case:dict,
@@ -844,52 +829,3 @@ def {self.name}():
 
         linklist = [[int(y) for y in x] for x in links]
         return linklist
-
-# if __name__ == "__main__":
-
-#     pd.options.display.width = None
-#     pd.options.display.max_columns = None
-#     pd.options.display.max_rows = None
-
-#     from wecc240 import wecc240
-#     options = ["SCHEDULING"]
-#     model = PPModel(case=wecc240(options=options))
-
-#     for graph in ["BUS","GEOHASH","ZONE","AREA"]:
-#         print(f"{graph}:",model.get_graph(graph))
-
-#     datamgr = PPData(model)
-#     datamgr.set_input("bus","PD","tests/load.csv",scale=10)
-#     datamgr.set_input("bus","QD","tests/load.csv",scale=1)
-
-#     datamgr.set_output("bus","VM","results/bus_vm.csv",formatting=".3f")
-#     datamgr.set_output("bus","VA","results/bus_va.csv",formatting=".4f")
-#     datamgr.set_output("bus","PD","results/bus_pd.csv",formatting=".4f")
-#     datamgr.set_output("bus","QD","results/bus_qd.csv",formatting=".4f")
-#     datamgr.set_output("gen","PG","results/gen_pg.csv",formatting=".4f")
-#     datamgr.set_output("gen","QG","results/gen_qg.csv",formatting=".4f")
-
-#     datamgr.set_recorder("results/cost.csv","cost",["cost"],
-#         scale=model.case['baseMVA'],formatting=".2f")
-#     datamgr.set_recorder("results/cost.csv","cost_pumva",["cost"],
-#         formatting=".2f")
-
-#     solver = PPSolver(model)
-#     simresult =  solver.run_timeseries(
-#         "2020-08-01 00:00:00+07:00",
-#         "2020-09-01 00:00:00+07:00",
-#         freq="1h",
-#         progress=lambda x: print(x,flush=True),
-#         stop_test=lambda x: x > dt.datetime(2020,8,1,0,0,0,tzinfo=pytz.UTC),
-#         use_acopf=True,
-#         )
-#     assert simresult == [
-#         "Stopped at t=Timestamp('2020-08-01 01:00:00+0000', tz='UTC')",
-#         ], f"ERROR: {simresult}"
-#     print("Simulation test ok")
-#     print(model.profile)
-
-#     from ppplots import PPPlots
-#     PPPlots(model).generation().savefig("results/scheduling_acopf_generation.png")
-
-#     print(model.save())

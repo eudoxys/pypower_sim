@@ -1,11 +1,4 @@
-"""PyPOWER timeseries simulation
-
-Syntax: pypower_sim [OPTIONS...] CASENAME [ARGUMENTS ...]
-
-Options:
-
-Arguments:
-"""
+"""PyPOWER timeseries simulation"""
 
 from .kml import KML
 from .ppdata import PPData
@@ -13,12 +6,14 @@ from .ppgen import PPGen
 from .ppmodel import PPModel
 from .ppplots import PPPlots
 from .ppsolver import PPSolver
+from .ppcli import PPCLI
 
 def main(*args,**kwargs):
     """Main command line processor"""
-    print([x for x in __doc__.split("\n") if x.startswith("Syntax: ")][0])
+
+    cli = PPCLI(*args,**kwargs)
     
-    return 1
+    return cli.exitcode
 
 if __name__ == "__main__":
 

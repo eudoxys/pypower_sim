@@ -81,6 +81,7 @@ class PPData:
 
             # set up input
             self.model.inputs[(name,column)] = {
+                "file": file,
                 "data": data,
                 "mapping": mapping,
             }
@@ -169,68 +170,5 @@ class PPData:
         recorder["targets"][name] = {
             "source":target,
             "format":formatting,
-            "transform": lambda x: x*scale+offset,
+            "transform": f"lambda x: x*{scale}+{offset}",
             }
-
-    # def map_columns(self,
-    #     # pylint: disable=too-many-arguments,too-many-positional-arguments
-    #     name:str,
-    #     column:str,
-    #     lookup:str="gis",
-    #     not_found:str="nearest",
-    #     on_multiple:str="assign",
-    #     basis:str|None=None,
-    #     ):
-    #     """Create a custom mapping for input columns to data rows
-
-    #     name: name of input target
-
-    #     column: column of input target
-
-    #     lookup: source of mapping lookup table
-
-    #     not_found: handling of columns not found in lookup source
-
-    #     on_multiple: handling of columns that map to more than one row
-
-    #     basis: basis GIS column for handling of multiple columns
-    #     """
-
-    #     # check for and fix missing columns--all should be in gis geohash list)
-    #     gis = self.model.get_data("gis").copy()
-    #     missing = set(data.columns) - set(gis.GEOHASH)
-    #     match not_found:
-    #         case "nearest":
-    #             geohash_list = gis.GEOHASH.to_list()
-    #             for item in missing:
-    #                 found = nearest(item,geohash_list)
-    #                 data.columns = [found if x==item else x for x in data.columns]
-    #         case "warning":
-    #             for item in missing:
-    #                 warnings.warn(f"{file}: {item} is not in model gis data")
-    #         case "error":
-    #             assert missing == set(), f"{missing} not in GIS data"
-    #         case "_":
-    #             raise ValueError(f"{not_found=} is invalid")
-
-    #     # map input columns to target rows
-    #     gis.BUS_I = gis.index
-    #     mapping = gis.set_index("GEOHASH").loc[data.columns]
-    #     mapping.index.name="GEOHASH"
-
-    #     # print(mapping[mapping[basis]>0].reset_index().set_index("BUS_I"))
-    #     result = mapping.loc[data.columns,["BUS_I",basis]]
-    #     noload = result[result["LOAD"].isna()]
-    #     if not noload.empty:
-    #         match not_found:
-    #             case "warning":
-    #                 warnings.warn(f"none of {noload.index} map to load busses")
-    #             case "error":
-    #                 raise KeyError(f"none of {noload.index} map to load busses")
-    #             case "nearest":
-    #                 raise NotImplementedError(f"none of {noload.index} map to load busses;"
-    #                     " {not_found=} is not supported in this case")
-    #             case "_":
-    #                 raise ValueError(f"{not_found=} is invalid")
-
-    #     self.model.inputs[(name,column)]["mapping"] = mapping.to_dict()
