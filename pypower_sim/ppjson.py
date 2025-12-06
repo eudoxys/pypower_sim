@@ -1,87 +1,91 @@
 """JSON support for PyPOWER simulation"""
 
-import os
-import sys
 import io
 import json
 import pytz
-from types import CodeType, FunctionType
 import numpy as np
 import pandas as pd
 
+# pylink: disable=invalid-name
 class PypowerModelEncoder(json.JSONEncoder):
     """Implements pypower_sim data encoder for JSON"""
-    def default(self, obj):
+    def default(self, o):
         """Default JSON encoder for pypower_sim
 
         Caveat: tuples are converted by list to json before this call so you
         must encode tuples explicitly using `{"type":"tuple","data":data}`.
         """
 
-        if isinstance(obj, np.integer):
-        
-            return int(obj)
-        
-        elif isinstance(obj, np.floating):
-        
-            return float(obj)
-        
-        elif isinstance(obj,set):
+        # pylint: disable=too-many-return-statements
 
-            return {"type": "set", "data": list(obj)}
+        if isinstance(o, np.integer):
 
-        elif isinstance(obj,bytes):
+            return int(o)
 
-            return {"type": "bytes", "data": " ".join(f"{x:x}" for x in obj)}
-        
-        elif isinstance(obj, np.ndarray):
-        
+        if isinstance(o, np.floating):
+
+            return float(o)
+
+        if isinstance(o,set):
+
+            return {"type": "set", "data": list(o)}
+
+        if isinstance(o,bytes):
+
+            return {"type": "bytes", "data": " ".join(f"{x:x}" for x in o)}
+
+        if isinstance(o, np.ndarray):
+
             return {
-                "type": "array", 
-                "dtype": str(obj.dtype), 
-                "data": obj.tolist(),
+                "type": "array",
+                "dtype": str(o.dtype),
+                "data": o.tolist(),
                 }
-        
-        elif isinstance(obj,pd.DataFrame):
+
+        if isinstance(o,pd.DataFrame):
             return {
                 "type": "dataframe",
                 "frame" : {
-                    "columns": list(obj.columns),
+                    "columns": list(o.columns),
                     "index": {
-                        "name": list(obj.index.names),
-                        "dtype": str(obj.index.dtype),
-                        "keys": obj.index.values.tolist(),
+                        "name": list(o.index.names),
+                        "dtype": str(o.index.dtype),
+                        "keys": o.index.values.tolist(),
                         },
-                    "rows":obj.values.tolist(),
+                    "rows":o.values.tolist(),
                     },
                 }
-        
-        elif isinstance(obj,dict) and [isinstance(x,tuple) for x in obj.keys()].any():
-        
-            return {"|".join(x):y for x,y in obj.items()}
-        
-        elif isinstance(obj,pd.Timestamp):
-        
-            return obj.strftime("%Y-%m-%d %H:%M:%S %Z")
-        
-        elif isinstance(obj,pd.Index):
-        
-            return obj.values.tolist()
-        
-        elif isinstance(obj,io.TextIOWrapper):
-        
+
+        if isinstance(o,dict) and [isinstance(x,tuple) for x in o.keys()].any():
+
+            return {"|".join(x):y for x,y in o.items()}
+
+        if isinstance(o,pd.Timestamp):
+
+            return o.strftime("%Y-%m-%d %H:%M:%S %Z")
+
+        if isinstance(o,pd.Index):
+
+            return o.values.tolist()
+
+        if isinstance(o,io.TextIOWrapper):
+
             return {
                 "type": "file",
-                "name": obj.name,
-                "readable": obj.readable(),
-                "writable": obj.writable(),
-                "position": obj.tell(),
+                "name": o.name,
+                "readable": o.readable(),
+                "writable": o.writable(),
+                "position": o.tell(),
                 }
-        
-        return json.JSONEncoder.default(self, obj)
 
+        return json.JSONEncoder.default(self, o)
+
+# pylint: disable=invalid-name
 def PypowerModelDecoder(data):
     """Convert JSON data back to pypower_sim data"""
+
+    # pylint: disable=too-many-return-statements
+
     if isinstance(data,dict):
 
         # special encoding for PPModel data types
@@ -90,10 +94,10 @@ def PypowerModelDecoder(data):
 
                 case "file":
 
-                    assert "name" in data, f"{data=} does not include 'name'"
-                    assert "readable" in data, f"{data=} does not include 'readable'"
-                    assert "writable" in data, f"{data=} does not include 'writable'"
-                    assert "position" in data, f"{data=} does not include 'position'"
+                    assert "name" in data, f"{data=} missing 'name'"
+                    assert "readable" in data, f"{data=} missing 'readable'"
+                    assert "writable" in data, f"{data=} missing 'writable'"
+                    assert "position" in data, f"{data=} missing 'position'"
                     name = data["name"]
                     mode = None
                     if data["readable"]:
@@ -105,21 +109,22 @@ def PypowerModelDecoder(data):
 
                 case "array":
 
-                    assert "dtype" in data, f"unable to decode array without 'dtype'"
-                    dtype = data["dtype"] 
-                    assert dtype in dir(np), f"{dtype=} is not a valid ndarray type"
-                    assert "data" in data, f"unable to decode array without 'data'"
+                    assert "dtype" in data, f"array {data=} missing 'dtype'"
+                    dtype = data["dtype"]
+                    assert dtype in dir(np), f"array {data=} 'dtype' is not valid"
+                    assert "data" in data, f"array {data=} missing 'data'"
                     return np.array(data["data"],dtype=getattr(np,dtype))
 
                 case "dataframe":
 
-                    assert data["type"] == "dataframe", f"input {data=} is not a dataframe"
+                    assert "frame" in data, f"dataframe {data=} missing 'frame'"
                     frame = data["frame"]
-                    assert "keys" in frame["index"], f"input {data=} missing keys"
-                    assert "dtype" in frame["index"], f"input {data=} missing dtype"
-                    assert "name" in frame["index"], f"input {data=} missing name"
+                    assert "keys" in frame["index"], f"dataframe {data=} missing frame 'keys'"
+                    assert "dtype" in frame["index"], f"dataframe {data=} missing frame 'dtype'"
+                    assert "name" in frame["index"], f"dataframe {data=} missing frame 'name'"
                     ndx = frame["index"]
-                    assert ndx["dtype"] == "datetime64[ns, UTC]", f"input {data=} index is not datetime64[ns, UTC]"
+                    assert ndx["dtype"] == "datetime64[ns, UTC]", \
+                        f"dataframe {data=} index is not datetime64[ns, UTC]"
                     df = pd.DataFrame(
                         data = frame["rows"],
                         index = pd.DatetimeIndex(ndx["keys"],tz=pytz.UTC),
@@ -141,13 +146,12 @@ def PypowerModelDecoder(data):
 
                 case "_":
 
-                    raise ValueError(f"type={spec['type']} is not recognized")
+                    raise ValueError(f"type={data['type']} is not recognized")
 
         return {x:PypowerModelDecoder(y) for x,y in data.items()}
 
-    elif isinstance(data,list):
+    if isinstance(data,list):
 
         return [PypowerModelDecoder(x) for x in data]
 
     return data
-

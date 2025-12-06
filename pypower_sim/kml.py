@@ -152,8 +152,8 @@ class KML:
                         print(f"    <name>{name}</name>""",file=fh)
                     if "style" in data:
                         print(f"    <styleUrl>#{data['style']}</styleUrl>",file=fh)
-                    print(f"    <Point><coordinates>{','.join(f'{x}'
-                        for x in data['position'])}</coordinates></Point>",file=fh)
+                    print(f"""    <Point><coordinates>{','.join(f'{x}'
+                        for x in data['position'])}</coordinates></Point>""",file=fh)
                     print("  </Placemark>",file=fh)
 
                 # output lines
@@ -166,10 +166,10 @@ class KML:
                     print("    <LineString>",file=fh)
                     print("      <tesselate>1</tesselate>",file=fh)
                     print("      <coordinates>",file=fh)
-                    print(f"      {','.join(f'{x}'
-                        for x in data['from_position'])}",file=fh)
-                    print(f"      {','.join(f'{x}'
-                        for x in data['to_position'])}",file=fh)
+                    print(f"""      {','.join(f'{x}'
+                        for x in data['from_position'])}""",file=fh)
+                    print(f"""      {','.join(f'{x}'
+                        for x in data['to_position'])}""",file=fh)
                     print("      </coordinates>",file=fh)
                     print("    </LineString>",file=fh)
                     print("  </Placemark>",file=fh)
@@ -177,10 +177,3 @@ class KML:
                 print("</kml>""",file=fh)
 
             self.kmlfile = None
-
-if __name__ == "__main__":
-
-    # pylint: disable=cyclic-import
-    from ppmodel import PPModel
-    from wecc240 import wecc240
-    PPModel("wecc240").set_case(wecc240()).save_kml("tests/wecc240.kml")

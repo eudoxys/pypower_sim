@@ -2,21 +2,25 @@
 
 """
 
-import sys
 import argparse
 import importlib
 
-class PPCLI(argparse.ArgumentParser):
+from .ppmodel import PPModel
 
+class PPCLI(argparse.ArgumentParser):
+    """Main CLI implementation"""
     E_OK = 0
     E_SYNTAX = 1
 
     def __init__(self):
-
+        """CLI constructor/processor"""
         super().__init__(
-            description=__doc__.split("\n")[0],
+            description=__doc__.split("\n",maxsplit=1)[0],
             epilog="\n".join(__doc__.split("\n")[1:])
             )
+
+        self.filename = None
+        self.case = None
 
         # required arguments
         self.add_argument("filename")

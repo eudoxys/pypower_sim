@@ -36,7 +36,7 @@ class PPSolver:
     def solve_pf(self,
         update:str='success',
         with_result:bool=False,
-        ) -> bool|[bool,dict]:
+        ) -> [bool,dict]:
         """Solve the powerflow problem
 
         Arguments:
@@ -67,7 +67,7 @@ class PPSolver:
         use_acopf:bool=False,
         update:str='success',
         with_result:bool=False,
-        ) -> bool|[bool,dict]:
+        ) -> [bool,dict]:
         """Solve the optimal powerflow problem
 
         Arguments:

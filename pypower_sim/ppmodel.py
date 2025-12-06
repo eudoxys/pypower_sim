@@ -56,9 +56,8 @@ import json
 import datetime as dt
 from typing import Self, Callable
 import warnings
-from importlib.metadata import version
+from importlib.metadata import version as pkg_version
 
-import pytz
 import numpy as np
 import pandas as pd
 
@@ -68,8 +67,6 @@ from pypower import idx_gen, idx_bus # used indirectly in get_header()
 # pylint: enable=unused-import
 from pypower import idx_cost as idx_gencost
 
-from .ppdata import PPData
-from .ppsolver import PPSolver
 from .ppjson import PypowerModelEncoder, PypowerModelDecoder
 from .kml import KML
 
@@ -241,12 +238,15 @@ class PPModel:
         """Convert model to a dict"""
         return {
             "application": "pypower_sim",
-            "version": version("pypower_sim"),
+            "version": pkg_version("pypower_sim"),
             "name": self.name,
             "case": self.case,
-            "inputs": {("|".join(x) if isinstance(x,(tuple,list)) else x):y for x,y in self.inputs.items()},
-            "outputs": {("|".join(x) if isinstance(x,(tuple,list)) else x):y for x,y in self.outputs.items()},
-            "recorders": {("|".join(x) if isinstance(x,(tuple,list)) else x):y for x,y in self.recorders.items()},
+            "inputs": {("|".join(x) if isinstance(x,(tuple,list)) else x):y
+                for x,y in self.inputs.items()},
+            "outputs": {("|".join(x) if isinstance(x,(tuple,list)) else x):y
+                for x,y in self.outputs.items()},
+            "recorders": {("|".join(x) if isinstance(x,(tuple,list)) else x):y
+                for x,y in self.recorders.items()},
             "options": self.options,
             "errors": self.errors,
             "profile": self.profile,
@@ -255,10 +255,10 @@ class PPModel:
     def from_dict(self,data:dict):
         """Convert dict to model"""
         assert data["application"] == "pypower_sim", "JSON is not a pypower_sim model"
-        assert data["version"] <= version("pypower_sim"), \
+        assert data["version"] <= pkg_version("pypower_sim"), \
             "JSON model is from a newer version of pypower_sim, " \
             "you should update pypower_sim to at least that version"
-        
+
         self.name = data["name"] if "name" in data else "unnamed"
 
         # extract case data and convert back to ndarray
@@ -266,21 +266,23 @@ class PPModel:
         arrays = ["bus","branch","gen","gencost","dcline","dclinecost"]
         self.case = {x:(PypowerModelDecoder(y) if x in arrays else y) for x,y in data["case"].items()}
 
-        self.inputs = {tuple(x.split("|")):PypowerModelDecoder(y) 
+        self.inputs = {tuple(x.split("|")):PypowerModelDecoder(y)
             for x,y in data["inputs"].items()} if "inputs" in data else {}
-        self.outputs = {x:PypowerModelDecoder(y) 
+        self.outputs = {x:PypowerModelDecoder(y)
             for x,y in data["outputs"].items()} if "outputs" in data else {}
-        self.recorders = {x:PypowerModelDecoder(y) 
+        self.recorders = {x:PypowerModelDecoder(y)
             for x,y in data["recorders"].items()} if "recorders" in data else {}
 
         self.options = data["options"] if "options" in data else {}
         self.errors = data["errors"] if "errors" in data else []
         self.profile = data["profile"] if "profile" in data else None
 
-    def to_json(self,*args,**kwargs):
+    def to_json(self,*args,**kwargs) -> str|None:
+        """Convert model to JSON"""
         return json.dump(self.to_dict(),cls=PypowerModelEncoder,*args,**kwargs)
 
     def from_json(self,*args,**kwargs):
+        """Convert model from JSON"""
         self.from_dict(json.load(*args,**kwargs))
 
     def save(self,
@@ -294,7 +296,7 @@ class PPModel:
         """
 
         if isinstance(file,str):
-            with open(file,"w") as fh:
+            with open(file,"w",encoding="utf-8") as fh:
                 return self.save(fh)
 
         if file is None:
@@ -316,7 +318,7 @@ class PPModel:
         file: file handle, name, or None for stdin
         """
         if isinstance(file,str):
-            with open(file,"r") as fh:
+            with open(file,"r",encoding="utf-8") as fh:
                 return self.load(fh)
 
         if file is None:
@@ -368,8 +370,8 @@ def {self.name}():
                     for x in PPModel.get_header(key)])
                 print(f"         #{header}",file=file)
                 for row in value.tolist():
-                    print(f"         [{','.join([f'{{0:{precision+3}g}}'\
-                        .format(round(x,precision)) for x in row])}],",file=file)
+                    print(f"""         [{','.join([f'{{0:{precision+3}g}}'
+                        .format(round(x,precision)) for x in row])}],""",file=file)
                 print("        ]),",file=file)
             else:
                 print(f"""      '{key}': {value},""",file=file)

@@ -1,5 +1,7 @@
 """PyPOWER timeseries simulation"""
 
+import sys
+
 from .kml import KML
 from .ppdata import PPData
 from .ppgen import PPGen
@@ -12,9 +14,9 @@ def main(*args,**kwargs):
     """Main command line processor"""
 
     cli = PPCLI(*args,**kwargs)
-    
+
     return cli.exitcode
 
 if __name__ == "__main__":
 
-    exit(main())
+    sys.exit(main())
