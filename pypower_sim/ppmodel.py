@@ -254,8 +254,10 @@ class PPModel:
 
         # extract case data and convert back to ndarray
         assert "case" in data, "JSON model does not contain a case"
-        arrays = ["bus","branch","gen","gencost","dcline","dclinecost"]
-        self.case = {x:(PypowerModelDecoder(y) if x in arrays else y) for x,y in data["case"].items()}
+        arrays = [x for x in ["bus","branch","gen","gencost","dcline","dclinecost","gis"]
+            if x in data["case"]]
+        self.case = {x:(PypowerModelDecoder(y) if x in arrays else y) 
+            for x,y in data["case"].items()}
 
         self.inputs = {tuple(x.split("|")):PypowerModelDecoder(y)
             for x,y in data["inputs"].items()} if "inputs" in data else {}
@@ -283,7 +285,7 @@ class PPModel:
 
             - None: if `fh` is specified
         """
-        return json.dump(self.to_dict(),cls=PypowerModelEncoder,*args,**kwargs)
+        return json.dump(self.to_dict(),*args,cls=PypowerModelEncoder,**kwargs)
 
     def from_json(self,*args,**kwargs):
         """Convert model from JSON"""
@@ -291,23 +293,26 @@ class PPModel:
 
     def save(self,
         file:io.StringIO|str|None=None,
+        **kwargs,
         ) -> str|None:
         """Save the model to a file
 
         Arguments:
 
             - `file`: file handle, name, or None to return data
+
+            - `**kwargs`: JSON dump options
         """
 
         if isinstance(file,str):
             with open(file,"w",encoding="utf-8") as fh:
-                return self.save(fh)
+                return self.save(fh,**kwargs)
 
         if file is None:
-            return json.dumps(self.to_dict(),indent=4,cls=PypowerModelEncoder)
+            return json.dumps(self.to_dict(),cls=PypowerModelEncoder,**kwargs)
 
         if hasattr(file,"writable") and file.writable():
-            self.to_json(file,indent=4)
+            self.to_json(file,**kwargs)
             return
 
         raise ValueError(f"{file=} is not writable")

@@ -55,15 +55,13 @@ for test in [x for x in dir(cases) if x.startswith("test_")]:
 
         assert solver.solve_pf(), "Powerflow failed after load()"
 
-        test_model.save("test_model.json")
+        test_model.save("test_model.json",indent=1)
         test_model.load("test_model.json")
         assert test_solver.run_timeseries(
             start=start,
             end=end,
             freq="1h",
             ) is None, "loaded timeseries simulation failed"
-
-        # print(test_model.get_data("gis"))
 
         print("OK")
 

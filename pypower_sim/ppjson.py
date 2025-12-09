@@ -45,10 +45,18 @@ class PypowerModelEncoder(json.JSONEncoder):
 
         if isinstance(o, np.ndarray):
 
+            def tojson(x):
+                if isinstance(x,list):
+                    return [tojson(y) for y in x]
+                if isinstance(x,float) and np.isnan(x):
+                    return None
+                if isinstance(x,(int,float,str,bool,None)):
+                    return x
+                raise Exception(f"array {o=} cannot be converted to JSON")
             return {
                 "type": "array",
                 "dtype": str(o.dtype),
-                "data": o.tolist(),
+                "data": tojson(o.tolist()),
                 }
 
         if isinstance(o,pd.DataFrame):
@@ -127,10 +135,27 @@ def PypowerModelDecoder(data) -> Any:
 
                 case "array":
 
+                    assert "data" in data, f"array {data=} missing 'data'"
                     assert "dtype" in data, f"array {data=} missing 'dtype'"
                     dtype = data["dtype"]
-                    assert dtype in dir(np), f"array {data=} 'dtype' is not valid"
-                    assert "data" in data, f"array {data=} missing 'data'"
+                    if dtype == "object":
+
+                        def fromlist(x):
+                            if isinstance(x,list):
+                                return [fromlist(y) for y in x]
+                            if x is None:
+                                return float('nan')
+                            try:
+                                ix = int(x)
+                                fx = float(x)
+                                if ix == fx:
+                                    return ix
+                                else:
+                                    return fx
+                            except:
+                                return str(x)
+                        return np.array(fromlist(data["data"]))
+                    assert dtype in ["int64","float64","datetime64[ns, UTC]"], f"array {data=} 'dtype' is not valid"
                     return np.array(data["data"],dtype=getattr(np,dtype))
 
                 case "dataframe":
