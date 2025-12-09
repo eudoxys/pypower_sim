@@ -7,6 +7,7 @@ from pypower_sim import PPModel
 from pypower_sim import PPSolver
 from pypower_sim import PPPlots
 from pypower_sim import PPData
+from pypower_sim import PPGIS
 import cases
 
 n_tests = 0
@@ -23,6 +24,8 @@ for test in [x for x in dir(cases) if x.startswith("test_")]:
         
         test_model = PPModel(name="test_model",case=getattr(cases,test))
         
+        gis = PPGIS(test_model,"gis.csv")
+
         solver=PPSolver(test_model)
         assert solver.solve_opf(), "DC OPF failed"
         assert solver.solve_opf(use_acopf=True), "AC OPF failed"
@@ -48,7 +51,6 @@ for test in [x for x in dir(cases) if x.startswith("test_")]:
             start=start,
             end=end,
             freq="1h",
-            # progress=lambda x: print(x,flush=True),
             ) is None, "original timeseries simulation failed"
 
         assert solver.solve_pf(), "Powerflow failed after load()"
@@ -59,8 +61,9 @@ for test in [x for x in dir(cases) if x.startswith("test_")]:
             start=start,
             end=end,
             freq="1h",
-            # progress=lambda x: print(x,flush=True),
             ) is None, "loaded timeseries simulation failed"
+
+        # print(test_model.get_data("gis"))
 
         print("OK")
 

@@ -10,6 +10,7 @@ from .ppplots import PPPlots
 from .ppsolver import PPSolver
 from .ppcli import PPCLI
 from .ppjson import PypowerModelDecoder, PypowerModelEncoder
+from .ppgis import PPGIS
 
 def main(*args,**kwargs):
     """Main command line processor"""

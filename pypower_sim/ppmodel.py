@@ -66,6 +66,7 @@ from pypower import idx_brch as idx_branch
 from pypower import idx_gen, idx_bus # used indirectly in get_header()
 # pylint: enable=unused-import
 from pypower import idx_cost as idx_gencost
+from .ppgis import idx_gis
 
 from .ppjson import PypowerModelEncoder, PypowerModelDecoder
 from .kml import KML
@@ -100,19 +101,6 @@ class idx_dcline:
     MU_QMAXF = 20
     MU_QMINT = 21
     MU_QMAXT = 22
-
-class idx_gis:
-    """Provide column index values for GIS data"""
-
-    # pylint: disable=invalid-name,too-few-public-methods
-
-    BUS_I = 0 # bus index
-    LAT = 1 # bus latitude
-    LON = 2 # bus longitude
-    GEOHASH = 3 # bus node id
-    NAME = 4 # bus name
-    GEN = 5 # generator count (nan: no gen allowed)
-    LOAD = 6 # load count (nan: no load allowed)
 
 class PPModel:
     """PyPower Model Access"""

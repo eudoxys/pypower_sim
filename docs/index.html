@@ -234,6 +234,27 @@ Set a recorder
 
 
 
+<h2 class="w3-container">Class pypower_sim.PPGIS()</h2>
+<p/>
+GIS manager class implementation
+
+
+<h3 class="w3-container"><code><b>pypower_sim.PPGIS</b>(<b>model</b>:<i>PPModel</i>, str | pandas.core.frame.DataFrame)</code></h3>
+<p/>
+GIS manager constructor
+<p/>
+
+
+<h4 class="w3-container">Arguments</h4>
+<p/>
+<ul><li><code>model</code>: pypower_sim model object</li>
+</None>
+
+</ul>
+
+
+
+
 <h2 class="w3-container">Class pypower_sim.PPGen()</h2>
 <p/>
 Abstract class for generator data
@@ -333,7 +354,7 @@ Convert generation fleet data to PyPOWER gencost data
 Write KML file
 <h3 class="w3-container">Static Variables</h3>
 <p/><code>valid_columns = {'state': (<class 'str'>, ''), 'county': (<class 'str'>, ''), 'plant_id': (<class 'int'>, None), 'generator_id': (<class 'str'>, ''), 'unit_code': (<class 'str'>, ''), 'plant_name': (<class 'str'>, ''), 'operating_capacity': (<class 'float'>, nan), 'summer_capacity': (<class 'float'>, nan), 'winter_capacity': (<class 'float'>, nan), 'technology': (<class 'str'>, ''), 'fuel': (<class 'str'>, ''), 'gen': (<class 'str'>, ''), 'latitude': (<class 'float'>, nan), 'longitude': (<class 'float'>, nan), 'geohash': (<class 'str'>, '')}</code>
-<p/><code>valid_mappings = {'fuel': {'WIND', 'SUN', 'GAS', 'COAL', 'WATER', 'OTHER', 'OIL', 'WASTE', 'GEO', 'NUCLEAR'}, 'gen': {'HT', 'CT', 'CC', 'NA', 'ST', 'WT', 'IC', 'ES', 'PV'}}</code>
+<p/><code>valid_mappings = {'fuel': {'WATER', 'OTHER', 'WASTE', 'OIL', 'GAS', 'SUN', 'NUCLEAR', 'WIND', 'GEO', 'COAL'}, 'gen': {'IC', 'ST', 'NA', 'ES', 'CT', 'HT', 'CC', 'PV', 'WT'}}</code>
 
 
 <h2 class="w3-container">Class pypower_sim.PPModel()</h2>
