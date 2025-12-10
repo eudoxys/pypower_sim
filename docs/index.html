@@ -237,9 +237,30 @@ Set a recorder
 <h2 class="w3-container">Class pypower_sim.PPGIS()</h2>
 <p/>
 GIS manager class implementation
+<p/>
+GIS data can be loaded into a model by providing a dataframe
+or specifying a CSV file that can be read using <code>pandas.read_csv()</code>.
+<p/>
+If <code>columns</code> is specified, these columns will be used to select
+the columns to read in.
+<p/>
 
 
-<h3 class="w3-container"><code><b>pypower_sim.PPGIS</b>(<b>model</b>:<i>PPModel</i>, str | pandas.core.frame.DataFrame)</code></h3>
+<h4 class="w3-container">Update must be specified to generate summary data and update the model</h4>
+<p/>
+- <code>GEOHASH</code>: updates the <code>GEOHASH</code> column from <code>LAT</code> and <code>LON</code>
+<p/>
+- <code>GEN</code>: updates the <code>GEN</code> column from the aggreagated <code>gen.PMAX</code> data
+  in the model.
+<p/>
+- <code>LOAD</code>: updates the <code>LOAD</code> column from the aggregated <code>bus.PD</code> data
+  in the model.
+<p/>
+- <code>MODEL</code>: updates the model <code>gis</code> table from the data provided.
+<p/>
+
+
+<h3 class="w3-container"><code><b>pypower_sim.PPGIS</b>(<b>model</b>:<i>PPModel</i>, str | pandas.core.frame.DataFrame, <b>columns</b>:<i>list</i>, <b>update</b>:<i>set</i>)</code></h3>
 <p/>
 GIS manager constructor
 <p/>
@@ -248,6 +269,11 @@ GIS manager constructor
 <h4 class="w3-container">Arguments</h4>
 <p/>
 <ul><li><code>model</code>: pypower_sim model object</li>
+<li><code>data</code>: GIS data</li>
+<li><code>columns</code>: name of columns to read into the GIS data(see <code>ppgis.idx_gis</code>)
+</li>
+<li><code>update</code>: columns to update after loading data</li>
+<li><code>**kwargs</code>: Pandas read_csv() arguments to use</li>
 </None>
 
 </ul>
@@ -354,7 +380,7 @@ Convert generation fleet data to PyPOWER gencost data
 Write KML file
 <h3 class="w3-container">Static Variables</h3>
 <p/><code>valid_columns = {'state': (<class 'str'>, ''), 'county': (<class 'str'>, ''), 'plant_id': (<class 'int'>, None), 'generator_id': (<class 'str'>, ''), 'unit_code': (<class 'str'>, ''), 'plant_name': (<class 'str'>, ''), 'operating_capacity': (<class 'float'>, nan), 'summer_capacity': (<class 'float'>, nan), 'winter_capacity': (<class 'float'>, nan), 'technology': (<class 'str'>, ''), 'fuel': (<class 'str'>, ''), 'gen': (<class 'str'>, ''), 'latitude': (<class 'float'>, nan), 'longitude': (<class 'float'>, nan), 'geohash': (<class 'str'>, '')}</code>
-<p/><code>valid_mappings = {'fuel': {'WATER', 'OTHER', 'WASTE', 'OIL', 'GAS', 'SUN', 'NUCLEAR', 'WIND', 'GEO', 'COAL'}, 'gen': {'IC', 'ST', 'NA', 'ES', 'CT', 'HT', 'CC', 'PV', 'WT'}}</code>
+<p/><code>valid_mappings = {'fuel': {'NUCLEAR', 'OTHER', 'WATER', 'GEO', 'GAS', 'SUN', 'COAL', 'WIND', 'WASTE', 'OIL'}, 'gen': {'CT', 'ST', 'ES', 'HT', 'CC', 'NA', 'PV', 'WT', 'IC'}}</code>
 
 
 <h2 class="w3-container">Class pypower_sim.PPModel()</h2>
@@ -745,6 +771,7 @@ Save the model to a file
 <h4 class="w3-container">Arguments</h4>
 <p/>
 <ul><li><code>file</code>: file handle, name, or None to return data</li>
+<li><code>**kwargs</code>: JSON dump options</li>
 </None>
 
 </ul>

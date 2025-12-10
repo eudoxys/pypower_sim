@@ -20,7 +20,26 @@ class idx_gis:
     LOAD = 6 # load count (nan: no load allowed)
 
 class PPGIS:
-    """GIS manager class implementation"""
+    """GIS manager class implementation
+
+    GIS data can be loaded into a model by providing a dataframe
+    or specifying a CSV file that can be read using `pandas.read_csv()`.
+
+    If `columns` is specified, these columns will be used to select
+    the columns to read in.
+
+    Update must be specified to generate summary data and update the model:
+
+    - `GEOHASH`: updates the `GEOHASH` column from `LAT` and `LON`
+
+    - `GEN`: updates the `GEN` column from the aggreagated `gen.PMAX` data
+      in the model.
+
+    - `LOAD`: updates the `LOAD` column from the aggregated `bus.PD` data
+      in the model.
+
+    - `MODEL`: updates the model `gis` table from the data provided.
+    """
     
     def __init__(self,
         model:TypeVar('PPModel'),
@@ -43,26 +62,6 @@ class PPGIS:
             - `update`: columns to update after loading data
 
             - `**kwargs`: Pandas read_csv() arguments to use
-
-        Description:
-
-        GIS data can be loaded into a model by providing a dataframe
-        or specifying a CSV file that can be read using `pandas.read_csv()`.
-
-        If `columns` is specified, these columns will be used to select
-        the columns to read in.
-
-        Update must be specified to generate summary data and update the model:
-
-        - `GEOHASH`: updates the `GEOHASH` column from `LAT` and `LON`
-
-        - `GEN`: updates the `GEN` column from the aggreagated `gen.PMAX` data
-          in the model.
-
-        - `LOAD`: updates the `LOAD` column from the aggregated `bus.PD` data
-          in the model.
-
-        - `MODEL`: updates the model `gis` table from the data provided.
         """
 
         # check columns
