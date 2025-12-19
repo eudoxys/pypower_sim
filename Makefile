@@ -2,7 +2,7 @@
 
 SOURCE=$(wildcard pypower_sim/*.py)
 
-LOGO="https://github.com/eudoxys/.github/blob/main/eudoxys_logo.png?raw=true"
+LOGO="https://github.com/eudoxys/.github/blob/main/eudoxys_banner.png?raw=true"
 
 docs: $(SOURCE)
 	pip install --upgrade pdoc
