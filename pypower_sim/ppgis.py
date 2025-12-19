@@ -12,12 +12,25 @@ class idx_gis:
     # pylint: disable=invalid-name,too-few-public-methods
 
     BUS_I = 0 # bus index
+    """Bus index"""
+
     LAT = 1 # bus latitude
+    """Bus latitude"""
+
     LON = 2 # bus longitude
+    """Bus longitude"""
+
     GEOHASH = 3 # bus node id
+    """Bus geohash"""
+
     NAME = 4 # bus name
+    """Bus name"""
+
     GEN = 5 # generator count (nan: no gen allowed)
+    """Total MW generation at bus"""
+
     LOAD = 6 # load count (nan: no load allowed)
+    """Total MW load at bus"""
 
 class PPGIS:
     """GIS manager class implementation
@@ -28,7 +41,7 @@ class PPGIS:
     If `columns` is specified, these columns will be used to select
     the columns to read in.
 
-    Update must be specified to generate summary data and update the model:
+    The value for `update` must be specified to generate summary data and update the model:
 
     - `GEOHASH`: updates the `GEOHASH` column from `LAT` and `LON`
 
@@ -50,18 +63,18 @@ class PPGIS:
         ):
         """GIS manager constructor
 
-        Arguments:
+        # Arguments
 
-            - `model`: pypower_sim model object
+        - `model`: pypower_sim model object
 
-            - `data`: GIS data
+        - `data`: GIS data
 
-            - `columns`: name of columns to read into the GIS data
-              (see `ppgis.idx_gis`)
+        - `columns`: name of columns to read into the GIS data
+          (see `ppgis.idx_gis`)
 
-            - `update`: columns to update after loading data
+        - `update`: columns to update after loading data
 
-            - `**kwargs`: Pandas read_csv() arguments to use
+        - `**kwargs`: Pandas read_csv() arguments to use
         """
 
         # check columns
@@ -115,7 +128,7 @@ class PPGIS:
             gengis = pd.merge(gen,data,left_on="GEN_BUS",right_on="BUS_I")
             gengis.set_index("GEN_BUS",inplace=True)
             data.set_index("BUS_I",inplace=True)
-            data["GEN"] = gengis[["PMAX"]].groupby("GEN_BUS").sum()
+            data["GEN"] = (gengis[["PMAX"]].groupby("GEN_BUS").sum()*model.case["baseMVA"]/1000).round(5)
             data.reset_index(inplace=True)
 
         # update loads
@@ -125,10 +138,10 @@ class PPGIS:
             nogis = set(load.BUS_I) - set(data.BUS_I)
             assert nogis == set(), f"loads {nogis=} have no GIS data"
 
-            loadgis = pd.merge(load[load.BUS_TYPE==idx_bus.PQ],data,left_on="BUS_I",right_on="BUS_I")
+            loadgis = pd.merge(load,data,left_on="BUS_I",right_on="BUS_I")
             loadgis.set_index("BUS_I",inplace=True)
             data.set_index("BUS_I",inplace=True)
-            data["LOAD"] = loadgis[["PD"]].groupby("BUS_I").sum()
+            data["LOAD"] = (loadgis[["PD"]].groupby("BUS_I").sum()*model.case["baseMVA"]/1000).round(5)
             data.reset_index(inplace=True)
 
         # save data to this object

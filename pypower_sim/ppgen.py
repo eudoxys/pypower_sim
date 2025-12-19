@@ -1,40 +1,37 @@
 """Abstract class for pypower generator data sources
 
-The following data must be provided by the `data` dataframe:
+The `pypower_sim.ppgen.PPGen` is an abstract class used to implement a generation
+data source, such as HIFLD or EIA Form 860m.  See `pypower_sim.ppgen.PPGen` for
+usage details.
 
-- state
-- county
-- operating_capacity
-- fuel
-- gen
-- latitude
-- longitude
+See `pypower_sim.ppgen.GENDATA` for a list of data must be provided by the `data` dataframe
+when constructing an object derived from `pypower_sim.ppgen.PPGen`.
 
 Valid fuels and the corresponding generator types:
 
-- BIO: biomass (ST)
-- COAL: coal (ST)
-- ELEC: electric (ES, HT)
-- GAS: gas (CT, CC)
-- GEO: geothermal (ST)
-- NUCLEAR: nuclear fuel (ST)
-- OIL: oil (NA)
-- OTHER: other (NA)
-- SUN: solar (CS, PV)
-- WASTE: waste products (ST)
-- WATER: water reservoirs/rivers (HT)
-- WIND: wind (WT)
+- `BIO`: biomass (`ST`)
+- `COAL`: coal (`ST`)
+- `ELEC`: electric (`ES`, `HT`)
+- `GAS`: gas (`CT`, `CC`)
+- `GEO`: geothermal (`ST`)
+- `NUCLEAR`: nuclear fuel (`ST`)
+- `OIL`: oil (`NA`)
+- `OTHER`: other (`NA`)
+- `SUN`: solar (`CS`, `PV`)
+- `WASTE`: waste products (`ST`)
+- `WATER`: water reservoirs/rivers (`HT`)
+- `WIND`: wind (`WT`)
 
 Valid generator types and the corresponding fuels are the following
 
-- ST: steam turbine (BIO, COAL, WASTE, NUCLEAR, GEO)
-- ES: energy storage (ELEC)
-- HT: hydroelectric turbine (ELEC, WATER)
-- CC: multi-cycle turbine (GAS)
-- CT: combustion turbine only (GAS)
-- CS: solar thermal (SUN)
-- PV: solar photovoltaic (SUN)
-- WT: wind turbine (WIND)
+- `ST`: steam turbine (`BIO`, `COAL`, `WASTE`, `NUCLEAR`, `GEO`)
+- `ES`: energy storage (`ELEC`)
+- `HT`: hydroelectric turbine (`ELEC`, `WATER`)
+- `CC`: multi-cycle turbine (`GAS`)
+- `CT`: combustion turbine only (`GAS`)
+- `CS`: solar thermal (`SUN`)
+- `PV`: solar photovoltaic (`SUN`)
+- `WT`: wind turbine (`WIND`)
 
 If a fuel and generator type is not matched as above, then the costs are assumed zero.
 """
@@ -48,6 +45,7 @@ from .kml import KML
 
 GENDATA = ['state', 'county', 'node', 'bus', 'fuel', 'gen', 'operating_capacity',
        'index', 'variable_cost', 'fixed_cost']
+"""Column names used by the `pypower_sim.ppgen.PPGen` class"""
 
 class PPGen:
     """Abstract class for generator data
@@ -56,12 +54,12 @@ class PPGen:
 
     To use this class, implement a derived class in which you set the data, e.g.,
 
-            from pypower_sim.ppgen import PPGen
-            import pandas as pd
-            class mygendata(PPGen):
-                def __init__(self,df:pd.DataFrame):
-                    self.data = df
-                    super().init()
+        from pypower_sim.ppgen import PPGen
+        import pandas as pd
+        class mygendata(PPGen):
+            def __init__(self,df:pd.DataFrame):
+                self.data = df
+                super().init()
     """
 
     # set of valid columns, data type, and defaults in dataframe
@@ -83,12 +81,14 @@ class PPGen:
         "longitude":(float,float('nan')),
         "geohash":(str,""),
         }
+    """Table of column data types and defaults"""
 
     # allows values for mapping fuel and gen values
     valid_mappings = {
         "fuel": {'WASTE', 'OTHER', 'OIL', 'GAS', 'GEO', 'WATER', 'NUCLEAR', 'WIND', 'COAL', 'SUN'},
         "gen": {'PV', 'CT', 'NA', 'CC', 'ES', 'WT', 'ST', 'IC', 'HT'},
         }
+    """Table of valid values for fuel and generator types"""
 
     def __init__(self,
         source:str=None,
@@ -96,18 +96,22 @@ class PPGen:
         ):
         """Abstract class constructor for generators
 
-        Arguments:
+        # Arguments
 
-            - `source`: source of data
+        - `source`: source of data
 
-            - `cache`: path name to cache
+        - `cache`: path name to cache
         """
 
         # verify source and cache specs
         assert isinstance(source,str), "source is not a valid string"
         assert isinstance(cache,str), "cache is not a valid string"
+        
         self.source=source
+        """Source data frame"""
+
         self.cache=cache
+        """Path to cache files, if any"""
 
         # verify data is a valid dataframe
         assert hasattr(self,"data"), "concrete class missing data attribute"
@@ -135,7 +139,10 @@ class PPGen:
                 self.data[name] = [convert(x,*spec) for x in self.data[name]]
 
         self.gendata = None
+        """Generation data"""
+
         self.case = None
+        """Case data"""
 
     def to_gen(self,
         # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -149,24 +156,24 @@ class PPGen:
         ) -> pd.DataFrame:
         """Convert generation fleet data to PyPOWER gen data
 
-        Arguments:
+        # Arguments
 
-            - `case`: pypower case data tables
+        - `case`: pypower case data tables
 
-            - `ignore_bustype`: flag to disable limiting nearest bus search based on bustype
+        - `ignore_bustype`: flag to disable limiting nearest bus search based on bustype
 
-            - `exclude`: table of exclusions
+        - `exclude`: table of exclusions
 
-            - `groupby`: data groupings in addition to bus id
+        - `groupby`: data groupings in addition to bus id
 
-            - `converters`: value converters to apply to data columns before groups
+        - `converters`: value converters to apply to data columns before groups
 
-            - `index_csv`: CSV file to which gen info is written, same order as gen
-              rows, index refers back to data rows
+        - `index_csv`: CSV file to which gen info is written, same order as gen
+          rows, index refers back to data rows
         
-        Returns:
+        # Returns
 
-            - `pandas.DataFrame`: generator cost data
+        - `pandas.DataFrame`: generator cost data
         """
 
         # pylint: disable=too-many-locals,too-many-branches,too-many-statements
@@ -291,13 +298,13 @@ class PPGen:
         ) -> pd.DataFrame:
         """Convert generation fleet data to PyPOWER gencost data
 
-        Arguments:
+        # Arguments
 
-            - `case`: pypower case data tables
+        - `case`: pypower case data tables
 
-        Returns:
+        # Returns
 
-            - `pandas.DataFrame`: generator cost data
+        - `pandas.DataFrame`: generator cost data
         """
         assert "version" in case and case["version"] == 2, \
             f"{case.version=} is not supported"
@@ -354,7 +361,12 @@ class PPGen:
         return result
 
     def to_kml(self,filename:str):
-        """Write KML file"""
+        """Write KML file
+
+        # Arguments
+
+        - `filename`: KML file name to which output is written
+        """
 
         model = PPModel("wecc240",case=self.case)
         gis = model.get_data("gis").set_index("GEOHASH")

@@ -32,11 +32,19 @@ class PPData:
     def __init__(self,model=TypeVar('PPModel')):
         """Setup data I/O manager
 
-        Arguments:
+        # Arguments
 
-            - `model`: pypower model
+        - `model`: `pypower_sim.ppmodel.PPModel` object
+
+        # See also
+
+        - `pypower_sim.ppmodel.PPModel.inputs`
+        - `pypower_sim.ppmodel.PPModel.outputs`
+        - `pypower_sim.ppmodel.PPModel.recorders`
         """
+        
         self.model = model
+        """`pypower_sim.ppmodel.PPModel` object"""
 
     def set_input(self,
         # pylint: disable=too-many-arguments,too-many-positional-arguments
@@ -49,19 +57,23 @@ class PPData:
         ):
         """Set a timeseries input data feed
 
-        Arguments:
+        # Arguments
 
-            - `name`: data set name (e.g., bus, branch)
+        - `name`: data set name (e.g., bus, branch)
 
-            - `column`: data column name (e.g., "PD")
+        - `column`: data column name (e.g., "PD")
 
-            - `file`: file name from which data is input
+        - `file`: file name from which data is input
 
-            - `scale`: scaling factor to apply to input data
+        - `scale`: scaling factor to apply to input data
 
-            - `offset`: offset to apply to the scaled data
+        - `offset`: offset to apply to the scaled data
 
-            - `mapping`: maps column names to data rows with weights
+        - `mapping`: maps column names to data rows with weights
+
+        # See also
+
+        - `pypower_sim.ppmodel.PPModel.inputs`
         """
         assert name in self.model.standard_idx,f"{name=} is not valid"
         assert column in self.model.get_header(name), f"{column=} is not found in {name} data"
@@ -98,21 +110,25 @@ class PPData:
         formatting:str="g"):
         """Set a timeseries output data feed
 
-        Arguments:
+        # Arguments
 
-            - `name`: data set name (e.g., bus, branch)
+        - `name`: data set name (e.g., bus, branch)
 
-            - `column`: data column name (e.g., "PD)
+        - `column`: data column name (e.g., "PD)
 
-            - `file`: file name to which data is output
+        - `file`: file name to which data is output
 
-            - `scale`: scaling factor to apply to output data
+        - `scale`: scaling factor to apply to output data
 
-            - `offset`: offset to apply to scaled data
+        - `offset`: offset to apply to scaled data
 
-            - `mapping`: maps column names to data rows with weights
+        - `mapping`: maps column names to data rows with weights
 
-            - `formatting`: formatting of output
+        - `formatting`: formatting of output
+
+        # See also
+
+        -  `pypower_sim.ppmodel.PPModel.outputs`
         """
         assert name in self.model.standard_idx, f"{name=} is not valid"
         assert column in self.model.get_header(name), f"{column=} is not found in {name} data"
@@ -145,19 +161,23 @@ class PPData:
         formatting="g"):
         """Set a recorder
 
-        Arguments:
+        # Arguments
         
-            - `file`: file name to which data is output
+        - `file`: file name to which data is output
 
-            - `name`: output column name
+        - `name`: output column name
 
-            - `target`: case keys to value to record (e.g., ["cost"])
+        - `target`: case keys to value to record (e.g., ["cost"])
 
-            - `scale`: scaling factor to apply to output data
+        - `scale`: scaling factor to apply to output data
 
-            - `offset`: offset to apply to scaled data
+        - `offset`: offset to apply to scaled data
 
-            - `format`: formatting of output
+        - `format`: formatting of output
+
+        # See also
+
+        -  `pypower_sim.ppmodel.PPModel.recorders`
         """
         assert isinstance(target,list), "target must be a list"
         assert all(isinstance(x,str) for x in target), "target must be a list of strings"

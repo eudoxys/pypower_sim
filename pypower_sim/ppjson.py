@@ -9,20 +9,23 @@ from typing import Any
 
 # pylink: disable=invalid-name
 class PypowerModelEncoder(json.JSONEncoder):
-    """Implements pypower_sim data encoder for JSON"""
+    """Implements `pypower_sim` data encoder for JSON"""
     def default(self, o) -> int|float|bool|str|None:
-        """Default JSON encoder for pypower_sim
+        """Default JSON encoder for `pypower_sim`
 
-        Arguments:
+        # Arguments
 
-            - `o`: object to convert
+        - `o`: object to convert
 
-        Returns:
+        # Returns
 
-            - `object`: converted object
+        - `int|float|bool|str|None`: converted `pypower_sim` object
 
-        Caveat: tuples are converted by list to json before this call so you
-        must encode tuples explicitly using `{"type":"tuple","data":data}`.
+        # Caveat
+
+        - Tuples are converted to `list` by `json.dump(s)` before this encoder
+          is called. To preserve the `tuple` data type, you must encode
+          tuples explicitly using, e.g., `{"type":"tuple", "data":data}`.
         """
 
         # pylint: disable=too-many-return-statements
@@ -99,15 +102,15 @@ class PypowerModelEncoder(json.JSONEncoder):
 
 # pylint: disable=invalid-name
 def PypowerModelDecoder(data) -> Any:
-    """Convert JSON data back to pypower_sim data
+    """Convert JSON data back to `pypower_sim` data
 
-    Arguments:
+    # Arguments
 
-        * `data`: JSON data to convert back to pypower_sim object
+    - `data`: JSON data to convert back to `pypower_sim` object
     
-    Returns:
+    # Returns
 
-        * `varies`: pypower_sim object
+    - `varies`: `pypower_sim` object
     """
 
     # pylint: disable=too-many-return-statements

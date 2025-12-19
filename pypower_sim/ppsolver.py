@@ -1,9 +1,22 @@
 """PyPOWER solver
 
 This model implements the PyPOWER static and timeseries
-solvers.
+solvers.  The following solvers are available:
 
-Example:
+- `pypower_sim.ppsolver.PPSolver.solve_pf`: solves steady-state powerflow (PF)
+  problem
+
+- `pypower_sim.ppsolver.PPSolver.solve_opf`: solve optimal powerflow problem
+  (DC or AC OPF).
+
+- `pypower_sim.ppsolver.PPSolver.run_timeseries`: solver quasi-steady time-series
+  (QSTS) problems.
+
+# Example
+
+This example loads the WECC 240 case and solve an hourly timeseries simulation
+for August 2020.
+
     from wecc240 import wecc240
     model = PPModel(case=wecc240)
 
@@ -39,17 +52,18 @@ class PPSolver:
         ) -> [bool,dict]:
         """Solve the powerflow problem
 
-        Arguments:
+        # Arguments
 
-            - `update`: when to update of model case data ('always','success','failure')
+        - `update`: when to update of model case data (must be in `
+          {'always', 'success', 'failure'}`)
 
-            - `with_result`: include result in return value
+        - `with_result`: include result in return value
 
-        Returns:
+        # Returns
 
-            - `bool`: True on success, False on failure
+        - `bool`: `True` on success, `False` on failure
 
-            - `dict`: result (if with_result is True)
+        - `dict`: result (if `with_result` is `True`)
         """
         assert update in ["always","success","failure"], f"{update=} is invalid"
         result,status = runpf(self.model.case,ppoption(**self.model.options))
@@ -70,19 +84,20 @@ class PPSolver:
         ) -> [bool,dict]:
         """Solve the optimal powerflow problem
 
-        Arguments:
+        # Arguments
 
-            - `use_acopf`: enable AC OPF solution
+        - `use_acopf`: enable AC OPF solution
 
-            - `update`: when update of model case data ('always','success','failure')
-        
-            - `with_result`: include result in return value
+        - `update`: when to update of model case data (must be in `
+          {'always', 'success', 'failure'}`)
+    
+        - `with_result`: include result in return value
 
-        Returns:
+        # Returns
 
-            - `bool`: True on success, False on failure
+        - `bool`: `True` on success, `False` on failure
 
-            - `dict`: result (if with_result is True)
+        - `dict`: result (if `with_result` is `True`)
         """
         assert use_acopf in [True,False], f"{use_acopf=} is invalid"
         assert update in ["always","success","failure"], f"{update=} is invalid"
@@ -102,9 +117,9 @@ class PPSolver:
     def update_inputs(self,t:dt.datetime) -> int:
         """Synchronize inputs with the current date/time
 
-        Arguments:
+        # Arguments
 
-            - `t`: the current date/time
+        - `t`: the current date/time
         """
         # update inputs
         errors = 0
@@ -128,11 +143,11 @@ class PPSolver:
         ) -> int:
         """Synchronize outputs to the current date/time
 
-        Arguments:
+        # Arguments
 
-            - `t`: the current date/time
+        - `t`: the current date/time
 
-            - `ts_format`: timestamp format
+        - `ts_format`: timestamp format
         """
         ts = t.strftime(ts_format)
 
@@ -176,27 +191,60 @@ class PPSolver:
         **kwargs) -> str|list[str]|None:
         """Run a timeseries simulation
 
-        Arguments:
+        Time-series solutions perform the following sequence of operations at each
+        timestep.
 
-        *args, **kwargs: See pandas.date_range()
+        ```mermaid
+        sequenceDiagram
 
-            - `progress`: set a progress callback function
+            note over inputs: read inputs
 
-            - `call_on_fail`: set a call-on-fail function
+            note over outputs, recorders: start outputs 
 
-            - `stop_on_fail`: enable stop-on-fail condition
+            loop from start to end by timestep
 
-            - `stop_test`: set a stop test call back function
+                inputs ->>model:input_data
 
-            - `use_acopf`: enable use of AC OPF instead of DC OPF
+                model ->>+runopf:case
+                runopf ->>-model:opf_result
 
-        Returns:
+                model ->>+runpf:opf_result
+                runpf ->>-model:pf_result
 
-            - `None`: No errors to report
+                note over model: save errors
 
-            - `str`: Error message (when stop_on_fail is True)
+                model ->>+outputs:output_data
 
-            - `list[str]`: Error messages (when stop_on_fail is False)
+                model ->>+recorders:recorder_data
+            
+            end
+
+            note over model: generate profile
+        ```
+
+        # Arguments
+
+        - `*args`: See `pandas.date_range(*args)`
+
+        - `progress`: set a progress callback function
+
+        - `call_on_fail`: set a call-on-fail function
+
+        - `stop_on_fail`: enable stop-on-fail condition
+
+        - `stop_test`: set a stop test call back function
+
+        - `use_acopf`: enable use of AC OPF instead of DC OPF
+
+        - `**kwargs`: See `pandas.date_range(**kwargs)`
+        
+        # Returns
+
+        - `None`: No errors to report
+
+        - `str`: Error message (when stop_on_fail is True)
+
+        - `list[str]`: Error messages (when stop_on_fail is False)
         """
 
         assert progress is None or callable(progress), \

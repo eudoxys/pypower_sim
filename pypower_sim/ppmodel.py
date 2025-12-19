@@ -1,8 +1,8 @@
 """PyPower model accessor
 
-This module defined the PyPower model accessor. Use the bus, branch, gen,
-gencost, dcline, and dclinecost methods to set the data arrays in the case.
-Use the 'case' member to access the pypower case data.
+The PyPower model accessor is used to manage the bus, branch, generator, generator cost,
+DC line, and DC line cost data arrays in `pypower` cases. Use the 'case' member to
+access the `pypower` case data.
 
 The `save_case()` method is used to export a PyPower case file.
 
@@ -11,35 +11,38 @@ The `save_kml()` method is used to export a Google Earth KML file.
 The `print()` method is used to output the case data in human readable form
 using a Pandas data frame.
 
-Example:
+# Example
 
 The following example constructs a new PyPower model and prints the case data.
 
     model = PPModel()
     print(model.case)
 
-Data Structures:
+# Data Structures
 
-- `case`: Provides all the PyPOWER case data needed to solve powerflow and
+- `pypower_sim.ppmodel.PPModel.case`: Provides all the PyPOWER case data needed to solve powerflow and
   optimal powerflows. See PyPOWER `idx_*` for details.
 
-- `inputs`: Provides all the information required to read data from input
+- `pypower_sim.ppmodel.PPModel.inputs`: Provides all the information required to read data from input
   files and update `case` data.
 
-- `outputs`: Provides all the information required to read `case` data and
+- `pypower_sim.ppmodel.PPModel.outputs`: Provides all the information required to read `case` data and
   update the output files.
 
-- `options`: Provides all the options used by the PyPOWER solvers. See PyPOWER
+- `pypower_sim.ppmodel.PPModel.recorcers`: Provides all the information required to read `case` data and
+  update the recorder files.
+
+- `pypower_sim.ppmodel.PPModel.options`: Provides all the options used by the PyPOWER solvers. See PyPOWER
   `ppoption` for details.
 
-- `errors`: Records all the error message emitted during a solver call.
+- `pypower_sim.ppmodel.PPModel.errors`: Records all the error message emitted during a solver call.
 
-- `profile`: Collects all the solver performance data obtained during a solver
+- `pypower_sim.ppmodel.PPModel.profile`: Collects all the solver performance data obtained during a solver
   call.
 
-- `cost`: OPF cost result (if any)
+- `pypower_sim.ppmodel.PPModel.cost`: OPF cost result (if any)
 
-See also:
+# See also
 
 - `PPData`: Model data I/O manager
 
@@ -74,7 +77,7 @@ from .kml import KML
 idx_dclinecost = idx_gencost
 
 class idx_dcline:
-    """Provide missing column index values that should be in pypower.idx_dcline"""
+    """@private Provide missing column index values that should be in pypower.idx_dcline"""
 
     # pylint: disable=invalid-name,too-few-public-methods
 
@@ -103,7 +106,7 @@ class idx_dcline:
     MU_QMAXT = 22
 
 class PPModel:
-    """PyPower Model Access"""
+    """`pypower_sim` model access class implementation"""
 
     standard_idx = { # list of idx values that are standard but not column names
         "bus": ["PQ","PV","REF","NONE"],
@@ -114,6 +117,7 @@ class PPModel:
         "dclinecost": ["PW_LINEAR","POLYNOMIAL"],
         "gis": [],
     }
+    """`idx_*` values that are excluded from the line of header indexes"""
 
     types_idx = { # table of non-float column data types
         "bus": {
@@ -150,6 +154,7 @@ class PPModel:
             "NAME": str,
         }
     }
+    """Table of `idx_*` indexes that refer to values having non-float types"""
 
     # pylint: disable=too-many-public-methods
 
@@ -161,19 +166,21 @@ class PPModel:
         ):
         """Create PyPower case data
 
-        Arguments:
+        # Arguments:
 
-            - `name`: name of the case
+        - `name`: name of the case
 
-            - `version`: case version number
+        - `version`: case version number
 
-            - `mvabase`: MVA base value
+        - `mvabase`: MVA base value
 
-            - `case`: case data
+        - `case`: case data
         """
 
         # pylint: disable=too-many-instance-attributes
         self.name = name
+        """Name of case"""
+
         self.case = {
             "version": version,
             "baseMVA": mvabase,
@@ -184,6 +191,8 @@ class PPModel:
             "dcline": [],
             "dclinecost": [],
         } if case is None else (case() if callable(case) else case)
+        """Case data (see https://github.com/eudoxys/pypower)"""
+
         assert "version" in self.case, "version missing in case"
         assert self.case["version"] == 2, f"version={self.case['version']} is not valid"
         assert "baseMVA" in self.case, "baseMVA missing in case"
@@ -193,25 +202,39 @@ class PPModel:
         assert "gen" in self.case, "gen missing in case"
 
         self.inputs = {}
+        """Time series mapped data inputs (see `pypower_sim.ppdata.PPData.set_input`)"""
+
         self.outputs = {}
+        """Time series mapped data outputs (see `pypower_sim.ppdata.PPData.set_output)"""
+
         self.recorders = {}
+        """Time series non-mapped data outputs (see `pypower_sim.ppdata.PPData.set_recorder)"""
+
         self.options = {"VERBOSE":0, "OUT_ALL":0}
+        """Solver options"""
+
         self.errors = []
+        """Solver errors detected"""
+
         self.profile = None
+        """Solver profile results"""
+
+        self.cost = None
+        """OPF cost result (if any)"""
 
     @staticmethod
     def get_header(name:str,*,ignore:list[str]=None) -> list[str]:
         """Convert idx data to a header list
 
-        Arguments:
+        # Arguments
 
-            - `idx`: module containing index values
+        - `idx`: module containing index values
 
-            - `ignore`: list of index values to ignore
+        - `ignore`: list of index values to ignore
 
-        Returns:
+        # Returns
 
-        list[str]: ordered list of data array column header names
+        - `list[str]`: ordered list of data array column header names
         """
         idx = globals()[f"idx_{name}"]
         if ignore is None:
@@ -243,7 +266,9 @@ class PPModel:
     def from_dict(self,data:dict):
         """Convert dict to model
 
-            - `data`: source data
+        # Arguments
+
+        - `data`: source data
         """
         assert data["application"] == "pypower_sim", "JSON is not a pypower_sim model"
         assert data["version"] <= pkg_version("pypower_sim"), \
@@ -273,17 +298,17 @@ class PPModel:
     def to_json(self,*args,**kwargs) -> str|None:
         """Convert model to JSON
 
-        Arguments:
+        # Arguments
 
-            - `*args`: see json.dump()
+        - `*args`: see json.dump()
 
-            - `**kwargs`: see json.dump()
+        - `**kwargs`: see json.dump()
 
-        Returns:
+        # Returns
 
-            - `str`: JSON data if no `fh` is specified
+        - `str`: JSON data if no `fh` is specified
 
-            - None: if `fh` is specified
+        - None: if `fh` is specified (JSON is write to file instead of returned)
         """
         return json.dump(self.to_dict(),*args,cls=PypowerModelEncoder,**kwargs)
 
@@ -297,11 +322,17 @@ class PPModel:
         ) -> str|None:
         """Save the model to a file
 
-        Arguments:
+        # Arguments
 
-            - `file`: file handle, name, or None to return data
+        - `file`: file handle, name, or None to return data
 
-            - `**kwargs`: JSON dump options
+        - `**kwargs`: JSON dump options
+
+        # Returns
+
+        - `str`: JSON data if `file` is `None`
+
+        - None: if `file` is specified (JSON is write to file instead of returned)
         """
 
         if isinstance(file,str):
@@ -322,9 +353,9 @@ class PPModel:
         ):
         """Load the model from a file
 
-        Arguments:
+        # Arguments
 
-            - `file`: file handle, name, or None for stdin
+        - `file`: file handle, name, or None for stdin
         """
         if isinstance(file,str):
             with open(file,"r",encoding="utf-8") as fh:
@@ -344,13 +375,13 @@ class PPModel:
         ) -> Self:
         """Set the case data
 
-        Arguments:
+        # Arguments
 
-            - `case`: case data to use
+        - `case`: case data to use
 
-        Returns:
+        # Returns
 
-            - `self`: the model with the newly set case data
+        - `self`: the model with the newly set case data
         """
         self.case = case
         return self
@@ -361,11 +392,11 @@ class PPModel:
         ):
         """Save the case data to a file
 
-        Arguments:
+        # Arguments
 
-            - `file`: file handle to which case data is saved
+        - `file`: file handle to which case data is saved
 
-            - `precision`: float rounding precision
+        - `precision`: float rounding precision
         """
         print(f"""# pypower case '{self.name}' saved on {dt.datetime.now()}
 from numpy import array
@@ -387,10 +418,17 @@ def {self.name}():
         print("}",file=file)
 
     def print(self,
-        items=None,
-        file=sys.stdout,
+        items:list[str]=None,
+        file:[io.TextIOWrapper]=sys.stdout,
         ):
-        """Print case data"""
+        """Print case data
+
+        # Arguments
+
+        - `items`: list of items to print
+
+        - `file`: file to which items are printed
+        """
         if items is None:
             items = self.standard_idx
 
@@ -444,11 +482,11 @@ def {self.name}():
         ):
         """Generate KML output
 
-        Arguments:
+        # Arguments
 
-            - `filename`: KML filename of output
+        - `filename`: KML filename of output (see `pypower_sim.kml.KML`)
 
-            - `use_geocode`: marker names are geocode instead of bus id
+        - `use_geocode`: marker names are geocode instead of bus id
         """
         kml = KML(filename)
 
@@ -508,14 +546,14 @@ def {self.name}():
     def bus(cls,**kwargs) -> np.array:
         """Create bus data
 
-        Arguments:
+        # Arguments
 
-            - `kwargs`: merged bus, load, and shunt data (see `pypower.idx_bus` for
-              details)
+        - `kwargs`: merged bus, load, and shunt data (see `pypower.idx_bus` for
+          details)
 
-        Returns:
+        # Returns
 
-            - `numpy.array`: bus data
+        - `numpy.array`: bus data
         """
 
         header = PPModel.get_header("bus")
@@ -537,14 +575,14 @@ def {self.name}():
     def branch(cls,**kwargs) -> np.array:
         """Create branch data
 
-        Arguments:
+        # Arguments
 
-            - `kwargs`: merged branch and transformer data (see `pypower.idx_brch` for
-              details)
+        - `kwargs`: merged branch and transformer data (see `pypower.idx_brch` for
+          details)
 
-        Returns:
+        # Returns
 
-            - `numpy.array`: bus data
+        - `numpy.array`: bus data
         """
         header = PPModel.get_header("branch")
         for key,value in kwargs.items():
@@ -565,13 +603,13 @@ def {self.name}():
     def gen(cls,**kwargs) -> np.array:
         """Create gen data
 
-        Arguments:
+        # Arguments
 
-            - `kwargs`: generation data (see `pypower.idx_gen` for details)
+        - `kwargs`: generation data (see `pypower.idx_gen` for details)
 
-        Returns:
+        # Returns
 
-            - `numpy.array`: gen data
+        - `numpy.array`: gen data
         """
 
         result = []
@@ -587,13 +625,13 @@ def {self.name}():
     def gencost(cls,**kwargs) -> np.array:
         """Create gencost data
 
-        Arguments:
+        # Arguments
 
-            - `kwargs`: generation data (see `pypower.idx_gen` for details)
+        - `kwargs`: generation data (see `pypower.idx_gen` for details)
 
-        Returns:
+        # Returns
 
-            - `numpy.array`: cost data
+        - `numpy.array`: cost data
         """
 
         result = []
@@ -614,13 +652,13 @@ def {self.name}():
     def dcline(cls,**kwargs) -> np.array:
         """Create dcline data
 
-        Arguments:
+        # Arguments
 
-            - `kwargs`: dcline data (see `pypower.idx_dcline` for details)
+        - `kwargs`: dcline data (see `pypower.idx_dcline` for details)
 
-        Returns:
+        # Returns
 
-            - `numpy.array`: dcline data
+        - `numpy.array`: dcline data
         """
         result = []
         for item in PPModel.get_header("dcline"):
@@ -635,13 +673,13 @@ def {self.name}():
     def dclinecost(cls,**kwargs) -> np.array:
         """Create dclinecost data
 
-        Arguments:
+        # Arguments
 
-            - `kwargs`: dclinecost data (see `pypower.idx_cost` for details)
+        - `kwargs`: dclinecost data (see `pypower.idx_cost` for details)
 
-        Returns:
+        # Returns
 
-            - `numpy.array`: cost data
+        - `numpy.array`: cost data
         """
 
         result = []
@@ -660,9 +698,9 @@ def {self.name}():
     def get_info(self) -> dict:
         """Get model information
 
-        Returns:
+        # Returns
 
-            - `dict`: table of model information
+        - `dict`: table of model information
         """
         bus = self.get_data("bus")
         gengis = pd.merge(
@@ -692,13 +730,13 @@ def {self.name}():
     def get_data(self,name) -> pd.DataFrame:
         """Get data table with data types
 
-        Arguments:
+        # Arguments
 
-            - `name`: name of case data to return (e.g., "bus","branch","gis", etc.)
+        - `name`: name of case data to return (e.g., `"bus"`,`"branch"`,`"gis"`, etc.)
 
-        Returns:
+        # Returns
 
-            - `pandas.DataFrame`: case data requested with data types (see `types_idx`)
+        - `pandas.DataFrame`: case data requested with data types (see `types_idx`)
         """
         assert name in self.standard_idx, f"'{name}' is not a valid data item name"
         width = self.case[name].shape[1]
@@ -718,9 +756,9 @@ def {self.name}():
     def get_gis(self) -> pd.DataFrame:
         """Get indexed GIS data
 
-        Returns:
+        # Returns
 
-            - `pandas.DataFrame`: case GIS data (no index, sorted by row number)
+        - `pandas.DataFrame`: case GIS data (no index, sorted by row number)
         """
         return self.get_data("gis").reset_index().sort_index()
 
@@ -730,15 +768,15 @@ def {self.name}():
         ) -> pd.DataFrame:
         """Get data for all load busses
 
-        Arguments:
+        # Arguments
 
-            - `bustype`: bus type of get (i.e., `idx_bus.PQ`, `idx_bus.PV`, `idx_bus.REF`)
+        - `bustype`: bus type of get (i.e., `idx_bus.PQ`, `idx_bus.PV`, `idx_bus.REF`)
 
-            - `index`: index to use (merge with GIS data if index in GIS columns)
+        - `index`: index to use (merge with GIS data if index in GIS columns)
 
-        Returns:
+        # Returns
 
-            - `pandas.DataFrame`: bus data
+        - `pandas.DataFrame`: bus data
         """
         bus = self.get_data("bus")
         if index in self.get_header("bus"):
@@ -753,13 +791,13 @@ def {self.name}():
     def get_nodes(self,data:pd.DataFrame|None=None) -> dict:
         """Get a dictionary of nodes and their busses
 
-        Arguments:
+        # Arguments
 
-            - `data`: dataframe from use ("gis" if None)
+        - `data`: dataframe from use (`"gis"` if None)
 
-        Returns:
+        # Returns
 
-            - `dict`: table of nodes and bus ids
+        - `dict`: table of nodes and bus ids
         """
         nodes = {}
         for n,data in (self.get_gis() if data is None else data)[
@@ -777,16 +815,16 @@ def {self.name}():
         ) -> tuple[pd.DataFrame,pd.DataFrame]:
         """Get network graphs
 
-        Arguments:
+        # Arguments
 
-            - `level`: "BUS","NODE","ZONE","AREA"
+        - `level`: `"BUS"`, `"NODE"`, `"ZONE"`, or `"AREA"`
 
-            - `nodes`: return node type (None, "nearest", "centroid")
+        - `nodes`: return node type (`None`, `"nearest"`, `"centroid"`)
 
-        Returns:
+        # Returns
 
-            - `links`: list of link tuples indexes into bus data in order of branch
-        data
+        - `links`: list of link tuples indexes into bus data in order of
+          branch data
         """
         nodes = pd.merge(self.get_data("bus"),
             self.get_data("gis"),

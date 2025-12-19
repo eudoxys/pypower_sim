@@ -1,35 +1,54 @@
-"""PyPower model graphic"""
+"""PyPower model plotting module
+
+The `pypower_sim.ppplots.PPPlots` module is used to the generate the following
+plots:
+
+- `pypower_sim.ppplots.PPPlots.voltage` generates a voltage profile with bus
+  index on the horizontal axis and voltage magnitude (per-unit bus kV) and
+  angle (degrees) on the vertical axis.
+
+- `pypower_sim.ppplots.PPPlots.generation` generates a generation profile with
+  bus index on the horizontal axis and generation real power (MW) and
+  reactive power (MVAr) on the vertical axis.
+
+- `pypower_sim.ppplots.PPPlots.load` generates a load profile with bus index
+  on the horizontal axis and load real power (MW) and reactive power(MVAr) on
+  the vertical axis.
+"""
 
 from typing import TypeVar
 import matplotlib.pyplot as plt
 from .ppmodel import PPModel
 
 class PPPlots:
-    """Plot creation class implementation"""
+    """`pypower_sim` plotting class implementation"""
     figsize = (15,8)
+    """Default figure size"""
 
     def __init__(self,
         model:PPModel,
         ):
         """Plot creator constructor
 
-        Arguments:
+        # Arguments
 
-            - `model`: pypower_sim model
+        - `model`: pypower_sim model
         """
         self.model = model
+        """`pypower_sim.ppmodel.PPModel` object"""
 
     def voltage(self,
         figsize:tuple[int,int]=None,
         ) -> TypeVar('matplotlib.pyplot.figure'):
         """Generate voltage profile
 
-        Arguments:
+        # Arguments
 
-            - `figsize`: figure dimensions
-        Returns:
+        - `figsize`: figure dimensions
+        
+        # Returns
 
-            - `matplotlib.pyplot.figure`: voltage profile figure
+        - `matplotlib.pyplot.figure`: voltage profile figure
         """
 
         bus = self.model.get_data("bus")
@@ -63,12 +82,13 @@ class PPPlots:
         ) -> TypeVar('matplotlib.pyplot.figure'):
         """Generate generation profile
 
-        Arguments:
+        # Arguments
 
-            - `figsize`: figure dimensions
-        Returns:
+        - `figsize`: figure dimensions
+        
+        # Returns
 
-            - `matplotlib.pyplot.figure`: voltage profile figure
+        - `matplotlib.pyplot.figure`: voltage profile figure
         """
 
         bus = self.model.get_data("gen")
@@ -102,12 +122,13 @@ class PPPlots:
         ) -> TypeVar('matplotlib.pyplot.figure'):
         """Generate load profile
 
-        Arguments:
+        # Arguments
 
-            - `figsize`: figure dimensions
-        Returns:
+        - `figsize`: figure dimensions
+        
+        # Returns
 
-            - `matplotlib.pyplot.figure`: voltage profile figure
+        - `matplotlib.pyplot.figure`: voltage profile figure
         """
 
         bus = self.model.get_data("bus")

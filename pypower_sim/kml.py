@@ -4,17 +4,19 @@ The KML class collect KML entities and saves them to a file when the `close
 ()` method is called. Note that the KML file is not saved if the KML object
 is deleted without being closed.
 
-The methods are used to create KML files:
+The following methods are used to create KML files:
 
-- add_linestyle() creates a linestyle for use by line entities
+- `pypower_sim.kml.KML.add_linestyle` creates a linestyle for use by line entities
 
-- add_markerstyle() creates a markerstyle for use by market entities
+- `pypower_sim.kml.KML.add_markerstyle` creates a markerstyle for use by market entities
 
-- add_folder() creates a folder to contain entities
+- `pypower_sim.kml.KML.add_line` creates a line entity
 
-- add_line() creates a line entity
+- `pypower_sim.kml.KML.add_marker` creates a marker entity
 
-- add_marker() creates a marker entity
+# See also
+
+- [Google Earth KML Documentation](https://developers.google.com/kml/documentation)
 """
 
 class KML:
@@ -24,15 +26,35 @@ class KML:
         kmlfile:str,
         name:str=None
         ):
-        """Start KML file"""
+        """Construct a KML file generator
+
+        # Arguments
+
+        - `kmlfile`: KML file name
+
+        - `name`: KML name (if different from base name `kmlfile`)
+        """
 
         self.kmlfile = kmlfile
-        self.name = self.kmlfile if name is None else f"{name}"
+        """KML file name"""
+
+        self.name = name if name else os.path.splitext(os.path.basename(self.kmlfile))[0]
+        """KML name (if different from base name of `pypower_sim.kml.KML.kmlfile`)"""
+        
         self.line = {}
+        """Line entity table (see `pypower_sim.kml.KML.add_line`)"""
+
         self.linestyle = {}
+        """Line style table (see `pypower_sim.kml.KML.add_linestyle`)"""
+
         self.marker = {}
+        """Place marker entity table (see `pypower_sim.kml.KML.add_marker`)"""
+
         self.markerstyle = {}
-        # self.folders = {}
+        """Place marker style table (see `pypower_sim.kml.KML.add_markerstyle`)"""
+
+        self.folders = {}
+        """@private Folder table"""
 
     def __del__(self):
         if self.kmlfile:
@@ -41,77 +63,82 @@ class KML:
     def add_linestyle(self,name:str,**kwargs):
         """Add a line style
 
-        Arguments:
+        # Arguments:
 
-            - `name`: linestyle name
+        - `name`: linestyle name
 
-            - `color`: line color
+        - `color`: line color
 
-            - `width`: line width
+        - `width`: line width
 
-            - `opacity`: line opacity
+        - `opacity`: line opacity
         """
         self.linestyle[name] = kwargs
 
     def add_markerstyle(self,name:str,**kwargs):
         """Add a marker style
 
-        Arguments:
+        # Arguments
 
-            - `name`: markerstyle name
+        - `name`: markerstyle name
 
-            - `icon`: icon URL
+        - `icon`: icon URL
 
-            - `scale`: icon size
+        - `scale`: icon size
         """
         self.markerstyle[name] = kwargs
-
-    # def add_folder(self,name:str,**kwargs):
-    #     """Add a folder
-
-    #     Arguments:
-
-    #     name: folder name
-
-    #     parent: parent folder name
-    #     """
-    #     self.folder[name] = kwargs
 
     def add_line(self,name:str,**kwargs):
         """Add a line entity
 
-        Arguments:
+        # Arguments
 
-            - `name`: line name
+        - `name`: line name
 
-            - `from_position`: line starting position
+        - `from_position`: line starting position
 
-            - `to_position`: line ending position
+        - `to_position`: line ending position
 
-            - `style`: line style
+        - `style`: line style
 
-            - `data`: line data
+        - `data`: line data
         """
         self.line[name] = kwargs
 
     def add_marker(self,name:str,**kwargs):
         """Add a marker entity
 
-        Arguments:
+        # Arguments
 
-            - `name`: marker name
+        - `name`: marker name
 
-            - `position`: marker position
+        - `position`: marker position
 
-            - `style`: marker style
+        - `style`: marker style
 
-            - `data`: marker data
+        - `data`: marker data
         """
         self.marker[name] = kwargs
 
-    def close(self):
-        """Close KML file"""
-        if self.kmlfile:
+    def add_folder(self,name:str,**kwargs):
+        """@private Add a folder
+
+        # Arguments
+
+        - `name`: folder name
+
+        - `parent`: parent folder name
+        """
+        self.folder[name] = kwargs
+
+    def close(self,write=True):
+        """Close KML file
+
+        # Arguments
+
+        - `write`: enable output to `pypower_sim.kml.KML.kmlfile`
+        """
+        if self.kmlfile and write:
             with open(self.kmlfile,"w",encoding="utf-8") as fh:
 
                 print('<?xml version="1.0" encoding="UTF-8"?>',file=fh)
@@ -176,4 +203,4 @@ class KML:
                 print("</Document>",file=fh)
                 print("</kml>""",file=fh)
 
-            self.kmlfile = None
+        self.kmlfile = None
