@@ -131,7 +131,15 @@ Alternatively, you can download the files from https://github.com/eudoxys/pypowe
 
 - License: https://github.com/eudoxys/pypower_sim/blob/main/LICENSE
 
-- Requirements: https://github.com/eudoxys/pypower_sim/blob/main/requirements.txt
+- Dependencies:
+
+    - [matplotlib](https://pypi.org/project/matplotlib/)
+    - [openpyxl](https://pypi.org/project/openpyxl/)
+    - [pandas](https://pypi.org/project/pandas/)
+    - [pytz](https://pypi.org/project/pytz/)
+    - [scipy](https://pypi.org/project/scipy/)
+    - [geohash](https://github.com/eudoxys/geohash)
+    - [pypower](https://github.com/eudoxys/pypower)
 
 ----
 """
