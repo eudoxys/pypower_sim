@@ -45,11 +45,11 @@ modeling extensions. See `pypower_sim.ppgis.PPGIS`,
 
     python3 -m venv .venv
     . .venv/bin/activate
-    pip install git+https://github.com/eudoxys.com/pypower_sim
+    pip install git+https://github.com/eudoxys/pypower_sim
 
 # Examples
 
-Examples can be accessed by cloning the source code. They are not included
+[Examples](https://github.com/eudoxys/pypower_sim/tree/main/examples) can be accessed by cloning the source code. They are not included
 in normal installations.
 
 ## Preparation
