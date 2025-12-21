@@ -1,28 +1,33 @@
 To run this example do the following
 
-1. Setup the runtime environment 
+# Setup the runtime environment 
 
-        # Clone the package
+    ## Clone the package
+    
         git clone git+https://github.com/eudoxys/pypower_sim
         python3 -m venv .venv
         . .venv/bin/activate
         pip install pypower_sim
 
-        # Change to the examples folder
+    ## Change to the examples folder
+
         cd pypower_sim/examples
 
-        # Start python interpreter
+    ## Start python interpreter
+
         python3
 
-2. Run the examples in Python interpreter
+# Run the examples in Python interpreter
 
-        # Load a case
+    ## Load a case
+
         from pypower_sim import PPModel
         from wecc240 import wecc240
         
         model = PPModel(case=wecc240)
 
-        # Run one-shot solvers
+    ## Run one-shot solvers
+
         from pypower_sim import PPSolver
         
         solver = PPSolver(model)
@@ -30,13 +35,14 @@ To run this example do the following
         solver.solve_opf(use_acopf=True)
         solver.solve_pf(with_result=True)
 
-        # Plot bus voltages
+    ## Plot bus voltages
         from pypower_sim import PPPlots
         
         plotter = PPPlots(model)
         plotter.voltage().savefig("wecc240_voltage.png")
         
-        # Load time-series inputs, outputs, and recorders
+    ## Load time-series inputs, outputs, and recorders
+
         from pypower_sim import PPData
         
         data = PPData(model)
@@ -51,7 +57,8 @@ To run this example do the following
         data.set_recorder("wecc240_cost.csv","cost",["cost"],
             scale=model.case['baseMVA'],formatting=".2f")
         
-        # Run time-series solution
+    ## Run time-series solution
+
         import datetime as tz
         import pytz
 
