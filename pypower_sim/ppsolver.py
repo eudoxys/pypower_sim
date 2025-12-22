@@ -55,7 +55,7 @@ class PPSolver:
         # Arguments
 
         - `update`: when to update of model case data (must be in `
-          {'always', 'success', 'failure'}`)
+          {'always', 'success', 'failure', 'never'}`)
 
         - `with_result`: include result in return value
 
@@ -65,7 +65,7 @@ class PPSolver:
 
         - `dict`: result (if `with_result` is `True`)
         """
-        assert update in ["always","success","failure"], f"{update=} is invalid"
+        assert update in ["always","success","failure","never"] f"{update=} is invalid"
         result,status = runpf(self.model.case,ppoption(**self.model.options))
         success = status == 1
         if ( success and update in ["always","success"] ) \
@@ -89,7 +89,7 @@ class PPSolver:
         - `use_acopf`: enable AC OPF solution
 
         - `update`: when to update of model case data (must be in `
-          {'always', 'success', 'failure'}`)
+          {'always', 'success', 'failure', 'never'}`)
     
         - `with_result`: include result in return value
 
@@ -100,7 +100,7 @@ class PPSolver:
         - `dict`: result (if `with_result` is `True`)
         """
         assert use_acopf in [True,False], f"{use_acopf=} is invalid"
-        assert update in ["always","success","failure"], f"{update=} is invalid"
+        assert update in ["always","success","failure","never"], f"{update=} is invalid"
         opf = (runacopf if use_acopf else rundcopf)
         result = opf(self.model.case,ppoption(**self.model.options))
         success = result["success"] is True
