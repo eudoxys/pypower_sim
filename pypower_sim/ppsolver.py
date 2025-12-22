@@ -1,7 +1,8 @@
 """PyPOWER solver
 
-This model implements the PyPOWER static and timeseries
-solvers.  The following solvers are available:
+This model implements the PyPOWER steady-state powerflow (PF), optimal
+powerflow (OPF), and quasi-steady time series (QSTS) solvers.  The following
+solvers are available:
 
 - `pypower_sim.ppsolver.PPSolver.solve_pf`: solves steady-state powerflow (PF)
   problem
@@ -65,7 +66,7 @@ class PPSolver:
 
         - `dict`: result (if `with_result` is `True`)
         """
-        assert update in ["always","success","failure","never"] f"{update=} is invalid"
+        assert update in ["always","success","failure","never"], f"{update=} is invalid"
         result,status = runpf(self.model.case,ppoption(**self.model.options))
         success = status == 1
         if ( success and update in ["always","success"] ) \

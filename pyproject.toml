@@ -19,13 +19,15 @@ license = {text="MIT"}
 classifiers = [
     "Programming Language :: Python :: 3",
 ]
-dependencies = [
-]
+dynamic = ["dependencies"]
 
 [tool.setuptools]
 packages = [
     "pypower_sim"
 ]
+
+[tool.setuptools.dynamic]
+dependencies = {file = "requirements.txt"}
 
 [project.scripts]
 ppsim = "pypower_sim:main"
