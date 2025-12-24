@@ -1,17 +1,31 @@
 """PyPOWER solver
 
 This model implements the PyPOWER steady-state powerflow (PF), optimal
-powerflow (OPF), and quasi-steady time series (QSTS) solvers.  The following
-solvers are available:
+powerflow (OPF), and quasi-steady time series (QSTS) solvers.  
 
-- `pypower_sim.ppsolver.PPSolver.solve_pf`: solves steady-state powerflow (PF)
-  problem
+# Description 
 
-- `pypower_sim.ppsolver.PPSolver.solve_opf`: solve optimal powerflow problem
-  (DC or AC OPF).
+The following solvers are available:
 
-- `pypower_sim.ppsolver.PPSolver.run_timeseries`: solver quasi-steady time-series
-  (QSTS) problems.
+1. Powerflow (PF)
+
+    `pypower_sim.ppsolver.PPSolver.solve_pf`: solves steady-state powerflow
+    (PF) problem
+
+2. Optimal Powerflow (OPF)
+
+    `pypower_sim.ppsolver.PPSolver.solve_opf`: solve optimal powerflow problem
+    (DC or AC OPF).
+
+3. Optimal Sizing and Placement (OSP)
+
+    `pypower_sim.ppsolver.PPSolver.solve_osp`: solve optimal sizing/placement
+    problem (OSP).
+
+4. Time-series Simulation (QSTS)
+
+    `pypower_sim.ppsolver.PPSolver.run_timeseries`: solver quasi-steady
+    time-series (QSTS) problems.
 
 # Example
 
@@ -115,6 +129,70 @@ class PPSolver:
             return success,result
         return success
 
+    def solve_osp(self,
+        costs:dict[str:float]|None=None,
+        options:dict[str:str|int|float]|None=None,
+        update:str='success',
+        with_result:bool=False):
+        """Solve the optimal sizing placement problem
+
+        # Arguments
+
+        - `costs`: specify capacity expansion costs
+
+        - `options`: specify problem options to enable/disable
+
+        - `update`: when to update of model case data (must be in `
+          {'always', 'success', 'failure', 'never'}`)
+    
+        - `with_result`: include result in return value
+
+        # Returns
+
+        - `bool`: `True` on success, `False` on failure
+
+        - `dict`: result (if `with_result` is `True`)
+
+        # Description
+
+        The following `costs` may specified:
+
+        1. `capacitor`: specifies the capacitor addition cost in $/MVAr (default `100`)
+
+        2. `condenser`: specifies the condenser addition cost in $/MVAr (default `1000`)
+
+        3. `generation`: specifies the generation addition cost in $/MVA (default `1000`)
+
+        4. `curtailment`: specifies the load curtailment cost in $/MW (default `10000`)
+
+        Note that in general the costs should increase in the order presented
+        above, i.e., capacitors are the least costly and load curtailment is
+        the most costly.
+
+        The following `options` are supported:
+
+        - `verbose`: enable verbose output from `cvxpy` (default `False`)
+
+        - `show_data`: output problem data before solving (default `False`)
+
+        - `complex`: enable complex flows in optimal solution (default `False`)
+
+        - `iterations`: maximum iterations allowed (default `10000`)
+
+        - `runtime`: maximum runtime allowed (default `None`)
+
+        - `angle`: voltage angle accuracy limit (default `10` degrees)
+
+        - `magnitude`: voltage magnitude constraint (default `5` %)
+
+        - `margin`: load capacity margin (default `20` %)
+
+        # Caveat
+
+        This solver is experimental and is currently being developed
+        """
+        warnings.warn("solver_osp is not implemented yet")
+
     def update_inputs(self,t:dt.datetime) -> int:
         """Synchronize inputs with the current date/time
 
@@ -198,29 +276,34 @@ class PPSolver:
         ```mermaid
         sequenceDiagram
 
-            note over inputs: read inputs
+            autonumber
+            note over inputs, players: Read data
 
-            note over outputs, recorders: start outputs 
+            note over outputs, recorders: Open files
 
             loop from start to end by timestep
 
-                inputs ->>model:input_data
+                inputs ->>model:Input data
 
-                model ->>+runopf:case
-                runopf ->>-model:opf_result
+                players ->>model:Player data
 
-                model ->>+runpf:opf_result
-                runpf ->>-model:pf_result
+                model ->>+solvers:Initial/last result
+                note over solvers: Call runopf()
+                solvers ->>-model:OPF result
 
-                note over model: save errors
+                model ->>+solvers:OPF result
+                note over solvers: Call runpf()
+                solvers ->>-model:PF result
 
-                model ->>+outputs:output_data
+                note over model: Save errors
 
-                model ->>+recorders:recorder_data
+                model ->>+outputs:Output data
+
+                model ->>+recorders:Recorder data
             
             end
 
-            note over model: generate profile
+            note over model: Generate profile
         ```
 
         # Arguments
@@ -343,3 +426,18 @@ class PPSolver:
         }
 
         return self.model.errors if self.model.errors else None
+
+if __name__ == "__main__":
+
+    # pip install git+https://github.com/eudoxys/wecc240
+    from wecc240.wecc240_2011 import wecc240_2011 as wecc240
+
+    # pip install -e ..
+    from pypower_sim.ppmodel import PPModel
+    model = PPModel(case=wecc240)
+
+    solver = PPSolver(model)
+
+    solver.solve_osp()
+    solver.solve_opf()
+    solver.solve_pf()

@@ -1,7 +1,9 @@
-pandas
-openpyxl
+cvxpy
 matplotlib
-pypower @ git+https://github.com/eudoxys/pypower
-scipy
+numpy
+openpyxl
+pandas
 pytz
+scipy
 geohash @ git+https://github.com/eudoxys/geohash
+pypower @ git+https://github.com/eudoxys/pypower

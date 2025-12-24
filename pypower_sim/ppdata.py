@@ -3,7 +3,44 @@
 The PyPOWER model data manager controls the flow of data in and out of a
 pypower model.
 
-Example:
+# Description
+
+There are four types of data I/O available:
+
+1. Inputs
+
+    Inputs are the preferred method of reading large amounts of structured data
+    into a single case structure column. Inputs read CSV files that are
+    arranged with columns that map to multiple rows in a single target case
+    data structure. For example, a CSV file that contains time-series values
+    for the load values of of busses would be handled by the
+    `pypower_sim.ppdata.PPPlot.set_input` method to read column values to the
+    `PD` and `QD` properties of busses.  
+
+2. Players
+
+    Players are the preferred method of reading unstructured data into
+    individual properties of cases. Players read CSV files that are arranged
+    with columns that map to properties of target case data structures. For
+    example, CSV file that contains time-series values for the constraints on
+    line flows would be handled by the `pypower_sim.ppdate.PPPlot.set_player`
+    method read column values to the `RATE_A`, `RATE_B`, and `RATE_C`
+    properties of specified branches.
+
+3. Outputs
+
+    Outputs write CSV files in a manner similar to #Inputs, i.e., sampling a
+    property from rows of a case object to columns of a CSV file. This is the
+    preferred method to generate large amounts of structure data from cases.
+
+4. Recorders
+
+    Recorder write CSV files in a manner similar to #Players, i.e., sampling
+    individual case data properties and writing them to a CSV file. This is the
+    preferred method to generate unstructured data from individual properties
+    of cases.
+
+# Example
 
     from wecc240 import wecc240
     model = PPModel(case=wecc240)
@@ -55,7 +92,7 @@ class PPData:
         offset:float=0.0,
         mapping:dict=None,
         ):
-        """Set a timeseries input data feed
+        """Set a time-series input data feed
 
         # Arguments
 
@@ -78,6 +115,53 @@ class PPData:
         assert name in self.model.standard_idx,f"{name=} is not valid"
         assert column in self.model.get_header(name), f"{column=} is not found in {name} data"
         assert (name,column) not in self.model.inputs, f"input({name=},{column=}) already defined"
+        if file is None:
+            del self.model.inputs[name]
+        else:
+            assert os.path.exists(file), f"{file=} not found"
+            data = pd.read_csv(file,index_col=[0],parse_dates=[0]) * scale + offset
+            data.index.name = "datetime"
+
+            # default to direct mapping of column names to row numbers
+            if mapping is None:
+                mapping = {
+                    "index": data.columns.astype(int),
+                    "scale": np.ones(len(data.columns)),
+                    }
+
+            # set up input
+            self.model.inputs[(name,column)] = {
+                "file": file,
+                "data": data,
+                "mapping": mapping,
+            }
+
+    def set_player(self,
+        # pylint: disable=too-many-arguments,too-many-position-arguments
+        name:str,
+        columns:dict[str:str],
+        file:str,
+        scale:float=1.0,
+        offset:float=0.0,
+        ):
+        """Set a time-series player input
+
+        # Arguments
+
+        - `name`: data set name (e.g., bus, branch)
+
+        - `columns`: data columns name mapping (e.g., "PD")
+
+        - `file`: file name from which data is input
+
+        - `scale`: scaling factor to apply to input data
+
+        - `offset`: offset to apply to the scaled data
+        """
+        assert name in self.model.standard_idx,f"{name=} is not valid"
+        notfound = set(columns.values) - set(self.model.get_header(name))
+        assert notfound == set() , f"columns {notfound} is not found in {name} data"
+        assert (name,list(columns)) not in self.model.inputs, f"input({name=},{list(columns)=}) already defined"
         if file is None:
             del self.model.inputs[name]
         else:

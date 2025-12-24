@@ -133,7 +133,9 @@ Alternatively, you can download the files from https://github.com/eudoxys/pypowe
 
 - Dependencies:
 
+    - [cvxpy](https://pypi.org/project/cvxpy)
     - [matplotlib](https://pypi.org/project/matplotlib/)
+    - [numpy](https://pypi.org/project/numpy/)
     - [openpyxl](https://pypi.org/project/openpyxl/)
     - [pandas](https://pypi.org/project/pandas/)
     - [pytz](https://pypi.org/project/pytz/)
@@ -155,6 +157,7 @@ from .ppsolver import PPSolver
 from .ppcli import PPCLI
 from .ppjson import PypowerModelDecoder, PypowerModelEncoder
 from .ppgis import PPGIS
+from .ppgraph import PPGraph
 
 def main(*args,**kwargs):
     """Main command line processor

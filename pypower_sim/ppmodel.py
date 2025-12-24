@@ -194,7 +194,7 @@ class PPModel:
         """Case data (see https://github.com/eudoxys/pypower)"""
 
         assert "version" in self.case, "version missing in case"
-        assert self.case["version"] == 2, f"version={self.case['version']} is not valid"
+        assert int(self.case["version"]) == 2, f"version={self.case['version']} is not valid"
         assert "baseMVA" in self.case, "baseMVA missing in case"
         assert self.case["baseMVA"] > 0.0, f"baseMVA={self.case['baseMVA']} is not valid"
         assert "bus" in self.case, "bus missing in case"
