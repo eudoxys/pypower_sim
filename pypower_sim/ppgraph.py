@@ -6,9 +6,9 @@ use with `pypower_sim` algorithms that require them.
 
 # Description
 
-The `pypower_sim.ppgraph.PPGraph` class implements method that generate graph
+The `pypower_sim.ppgraph.PPGraph` class implements methods to generate graph
 analysis matrices such as the degree, adjacency, incidence, and Laplacian.
-The module also support spectral analysis to identify important network
+The module also supports spectral analysis to identify important network
 properties such as graph Laplacian eigenvalues and the number of islands.
 
 # Examples
@@ -43,7 +43,7 @@ then we have the following graph analysis results.
 
         D = graph.degree()
 
-  which `print(D.todense()` outputs as
+  which `print(D.todense())` outputs as
 
         [[2. 0. 0. 0.]
          [0. 3. 0. 0.]
@@ -100,14 +100,14 @@ then we have the following graph analysis results.
 
 The result of graph analyses are cached in case they are requested more than
 once. The cached values are based on the network bus and branch data at the
-time the cache was updated. If the bus or branch values have changed since
-the last request, the `refresh=True` option should be included in the
+time the cache was refreshed. If the bus or branch values have changed since
+the last refresh, then the `refresh=True` option should be included in the
 request, e.g.
 
     graph.incidence(refresh=True)
 
-which will force recalculation of all the graph analysis results by clearing
-the cache of the outdated results from previous requests.
+which forces recalculation of all the graph analysis results by clearing the
+cache of the outdated results from previous requests.
 """
 # pylint: enable=line-too-long
 
@@ -127,7 +127,7 @@ class PPGraph:
         branch network model
         """
         self.model = model
-        """Model object (`pypower_sim.ppmodel.PPModel)"""
+        """Model object (`pypower_sim.ppmodel.PPModel`)"""
 
         # pylint: disable=invalid-name
         self.A = None # admittance matrix
@@ -202,7 +202,7 @@ class PPGraph:
 
         # Returns
 
-        - `sp.csr_matrix`: degree matrix
+        - `scipy.csr_matrix`: degree matrix
 
         # Description
 
@@ -235,7 +235,7 @@ class PPGraph:
 
         # Returns
 
-        - `sp.csr_matrix`: adjacency matrix
+        - `scipy.csr_matrix`: adjacency matrix
 
         # Description
 
@@ -279,8 +279,8 @@ class PPGraph:
         if refresh:
             self.refresh()
         elif self.Z is None:
-            self.Z = np.array([complex(x,y)
-                for x,y in self.branch[["BR_R","BR_X"]].values])
+            self.Z = np.array([(complex(x,y) if status == 1 else 0j)
+                for x,y,status in self.branch[["BR_R","BR_X","BR_STATUS"]].values])
 
         match part:
             case 'r':
@@ -301,7 +301,7 @@ class PPGraph:
     def incidence(self,
         refresh:bool=False,
         complex_flows:bool=True,
-        weighted:bool=True,
+        weighted:bool=False,
         ) -> sp.csr_matrix:
         r"""Get network indicidence matrix
 
@@ -317,14 +317,15 @@ class PPGraph:
     
         # Returns
         
-        - `sp.csr_matrix`: incidence matrix
+        - `scipy.csr_matrix`: incidence matrix
 
         # Description
 
         The incidence matrix $B \in \mathbb R^{N \times M}$ has the element
         $B_{ij} = 1$ when the node $i$ in incident with the branch $j$, and 0
-        otherwise. The weighted incidence matrix uses the value $\sqrt
-        {\frac 1 {R_j+jX_j}}$ instead of 1.
+        otherwise. The weighted incidence matrix uses the value $\frac 1
+        {R_j+jX_j}$ instead of 1 for closed branches and 0 for open
+        branches.
         """
         if refresh:
             self.refresh()
@@ -337,22 +338,22 @@ class PPGraph:
 
         if weighted:
 
-            Z = sp.diags([(1/x if np.abs(x)!=0 else 0) for x in self.impedance()])
+            Z = np.array([(1/x if np.abs(x)!=0 else 0) for x in self.impedance()])
             if not complex_flows:
                 Z = Z.real
             self.W = (sp.csr_matrix((Z,[range(self.M),fbus]),shape=(self.M,self.N)) -\
                 sp.csr_matrix((Z,[range(self.M),tbus]),shape=(self.M,self.N))).T
             return self.W
 
-        Z = np.ones(self.M)
+        Z = self.branch["BR_STATUS"].values
         self.B = (sp.csr_matrix((Z,[range(self.M),fbus]),shape=(self.M,self.N)) -\
             sp.csr_matrix((Z,[range(self.M),tbus]),shape=(self.M,self.N))).T
         return self.B
 
     def laplacian(self,
         refresh:bool=False,
-        weighted:bool=True,
-        complex_flows:bool=True,
+        weighted:bool=False,
+        complex_flows:bool=False,
         ) -> sp.csr_matrix:
         r"""Get network graph Laplacian
 
@@ -367,7 +368,7 @@ class PPGraph:
     
         # Returns
 
-        - `sp.csr_matrix`: (graph) Laplacian matrix
+        - `scipy.csr_matrix`: (graph) Laplacian matrix
 
         # Description
 
@@ -375,9 +376,10 @@ class PPGraph:
         defined as $L = D - A$, where $D$ is the degree matrix
         (see `pypower_sim.ppgraph.PPGraph.degree`) $A$ is the adjacency
         matrix(see `pypower_sim.ppgraph.PPGraph.adjacency`). The
-        (weighted) graph Laplacian matrix is defined as $G = W W^T$, where
-        $W$ is the weighted incidence matrix
-        (see `pypower_sim.ppgraph.PPGraph.incidence`)
+        (weighted) graph Laplacian matrix is defined as $G = B~Y~B^T$, where
+        $B$ is the unweighted incidence matrix
+        (see `pypower_sim.ppgraph.PPGraph.incidence`) and $Y=1/Z$ is the
+        branch admittance vector (see `pypower_sim.ppgraph.impedance`).
         """
         if refresh:
             self.refresh()
@@ -389,11 +391,11 @@ class PPGraph:
         if weighted:
 
             # pylint: disable=invalid-name
-            Z = sp.diags([(1/x if np.abs(x)!=0 else 0) for x in self.impedance()])
+            Y = sp.diags([(1/x if np.abs(x)!=0 else 0) for x in self.impedance()])
             if not complex_flows:
-                Z = Z.real
-            W = self.incidence(weighted=False)
-            self.G = W @ Z @ W.T
+                Y = Y.real
+            B = self.incidence(weighted=False)
+            self.G = B @ Y @ B.T
             return self.G.tocsr()
 
         self.L = self.degree() - self.adjacency()
@@ -402,9 +404,9 @@ class PPGraph:
     def spectral(self,
         refresh:bool=False,
         precision:int=8,
-        weighted:bool=True,
-        complex_flows:bool=True,
-        ) -> TypeVar('namedtuple("spectral",["E","U","K"]'):
+        weighted:bool=False,
+        complex_flows:bool=False,
+        ) -> TypeVar("namedtuple('spectral',['E','U','K']"):
         """Get spectral analysis results
 
         # Arguments
@@ -448,7 +450,7 @@ class PPGraph:
         # count islands
         K = sum(1 if x==0 else 0 for x in np.abs(e[i]).round(precision))
 
-        self.S = namedtuple("spectral",["E","U","K"])(E,U,K)
+        self.S = namedtuple('spectral',['E','U','K'])(E,U,K)
         return self.S
 
 if __name__ == "__main__":
@@ -470,7 +472,7 @@ if __name__ == "__main__":
         "branch": array([
             [0, 1, 0.01008, 0.0504, 0.1025, 250, 250, 250, 0, 0, 1, -360, 360],
             [0, 2, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 1, -360, 360],
-            [1, 2, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 1, -360, 360],
+            [1, 2, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 0, -360, 360],
             [1, 3, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 1, -360, 360],
             [2, 3, 0.01272, 0.0636, 0.1275, 250, 250, 250, 0, 0, 1, -360, 360]
             ]),
@@ -483,6 +485,8 @@ if __name__ == "__main__":
     graph = PPGraph(test)
 
     np.set_printoptions(edgeitems=3,linewidth=10000)
+
+    # print(graph.incidence(weighted=True))
 
     S = graph.spectral(weighted=False,complex_flows=False)
     print("*** Wheatstone ***",f"{S.E=}",f"{S.U=}",f"{S.K=}",sep="\n")
