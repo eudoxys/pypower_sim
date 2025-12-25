@@ -187,7 +187,7 @@ properties such as graph Laplacian eigenvalues and the number of islands.</p>
     "branch": array([
         [0, 1, 0.01008, 0.0504, 0.1025, 250, 250, 250, 0, 0, 1, -360, 360],
         [0, 2, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 1, -360, 360],
-        [1, 2, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 1, -360, 360],
+        [1, 2, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 0, -360, 360],
         [1, 3, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 1, -360, 360],
         [2, 3, 0.01272, 0.0636, 0.1275, 250, 250, 250, 0, 0, 1, -360, 360]
         ]),
@@ -228,10 +228,10 @@ properties such as graph Laplacian eigenvalues and the number of islands.</p>
 
 <p>which <code>print(W.todense())</code> outputs as</p>
 
-<pre><code>  [[ 3.41112845-2.79645642j  3.97046957-3.25500645j  0.        +0.j          0.        +0.j          0.        +0.j        ]
-   [-3.41112845+2.79645642j  0.        +0.j          3.97046957-3.25500645j  3.97046957-3.25500645j  0.        +0.j        ]
-   [ 0.        +0.j         -3.97046957+3.25500645j -3.97046957+3.25500645j  0.        +0.j          3.0365804 -2.48940046j]
-   [ 0.        +0.j          0.        +0.j          0.        +0.j         -3.97046957+3.25500645j -3.0365804 +2.48940046j]]
+<pre><code>  [[ 3.81562882,  5.16956162,  0.        ,  0.        ,  0.        ],
+   [-3.81562882,  0.        ,  0.        ,  5.16956162,  0.        ],
+   [ 0.        , -5.16956162,  0.        ,  0.        ,  3.02370585],
+   [ 0.        ,  0.        ,  0.        , -5.16956162, -3.02370585]]
 </code></pre></li>
 <li><p>The graph Laplacian matrix is obtained using</p>
 
@@ -240,27 +240,24 @@ properties such as graph Laplacian eigenvalues and the number of islands.</p>
 
 <p>which <code>print(G.todense())</code> outputs as</p>
 
-<pre><code>  [[ 8.98519044-44.92595218j -3.81562882+19.07814408j -5.16956162+25.84780811j  0.         +0.j        ]
-   [-3.81562882+19.07814408j 14.15475206-70.77376029j -5.16956162+25.84780811j -5.16956162+25.84780811j]
-   [-5.16956162+25.84780811j -5.16956162+25.84780811j 13.3628291 -66.81414548j -3.02370585+15.11852927j]
-   [ 0.         +0.j         -5.16956162+25.84780811j -3.02370585+15.11852927j  8.19326748-40.96633738j]]
+<pre><code>  [[ 8.98519044, -3.81562882, -5.16956162,  0.        ],
+   [-3.81562882,  8.98519044,  0.        , -5.16956162],
+   [-5.16956162,  0.        ,  8.19326748, -3.02370585],
+   [ 0.        , -5.16956162, -3.02370585,  8.19326748]]
 </code></pre></li>
 <li><p>The spectral analysis results are obtained using</p>
 
-<pre><code>  S = graph.spectral()
+<pre><code>  S = graph.spectral(weighted=True,complex_flows=False)
 </code></pre>
 
 <p>which <code>print(f"{S.E=}",f"{S.U=}",f"{S.K=}",sep="
 ")</code> outputs as</p>
 
-<pre><code>  S.E=array([-0.        ,  0.01975989,  0.03107986,  0.06764222,  0.0900409 ,  0.12893983,  0.14475458,  0.1803626 ,  0.18837462,  0.21693098,  0.22627614,  0.23525724,  0.25632602,  0.29241164,  0.3039104 ,  0.31917568,  0.32983981,  0.36011597,  0.39978127,  0.43446542,  0.43921655,  0.4485136 ,  0.46628586,  0.46825333,  0.48137538,  0.501443  ,  0.50838461,  0.53507925,  0.54176625,  0.54506606,  0.5605769 ,  0.57905423,  0.58578644,  0.61552598,  0.62368472,  0.62982085,  0.63423629,  0.64158652,  0.66329773,  0.66964409,  0.68619486,  0.70193996,  0.71688895,  0.72001135,  0.73749215,  0.74299587,  0.7437151 ,  0.75541561,  0.76188426,  0.77693339,  0.77984286,  0.801735  ,  0.80951114,  0.81013557,  0.81094488,  0.82348274,  0.83620688,  0.84244081,  0.86204113,  0.8635449 ,  0.87642207,  0.8982466 ,  0.90972498,  0.96629582,  0.98351359,  1.        ,  1.        ,  1.        ,  1.        ,  1.        ,  1.        ,  1.04497285,  1.07370271,  1.08041265,  1.09521455,  1.13081015,  1.14898623,  1.15272876,  1.17717625,  1.2102953 ,  1.24144093,  1.27394076,  1.31760309,  1.32766696,  1.35031495,  1.36908305,  1.40814091,  1.41351134,  1.46625766,  1.49155913,  1.53005203,  1.56137234,  1.64081855,  1.67611359,  1.68534014,  1.70041297,  1.74758906,  1.77589824,  1.83419596,  1.87679091,  1.95295469,  2.        ,  2.        ,  2.        ,  2.        ,  2.        ,  2.04649053,  2.06727852,  2.12457829,  2.1736644 ,  2.18573585,  2.26933925,  2.28864028,  2.29668929,  2.29743787,  2.31866598,  2.40326579,  2.45262625,  2.48537053,  2.49531437,  2.52973953,  2.58931507,  2.66079802,  2.68016492,  2.72522944,  2.77544872,  2.8356024 ,  2.85464407,  2.8939295 ,  2.90090201,  2.95191171,  2.95781988,  2.96655831,  3.        ,  3.        ,  3.05993593,  3.09473987,  3.17653361,  3.18115675,  3.1999872 ,  3.22987318,  3.24245457,  3.25412638,  3.25855324,  3.39344337,  3.41051131,  3.41421356,  3.43445103,  3.52941803,  3.54075842,  3.58910451,  3.60201195,  3.70346655,  3.71917357,  3.80956985,  3.82872949,  3.96053146,  4.02371594,  4.04007473,  4.08044545,  4.1013116 ,  4.13118355,  4.27769024,  4.30618326,  4.34315521,  4.38235605,  4.45028171,  4.46385309,  4.52787176,  4.57257574,  4.63778038,  4.83910756,  4.9984338 ,  5.0093837 ,  5.02673678,  5.05665585,  5.08338859,  5.10813597,  5.19052938,  5.22255201,  5.22907443,  5.30265904,  5.35309533,  5.38757123,  5.39050068,  5.47650731,  5.73041215,  5.94164693,  5.98100853,  6.0050047 ,  6.01754048,  6.05335841,  6.19120755,  6.25902048,  6.26705856,  6.28769418,  6.31650923,  6.5782406 ,  6.70495308,  6.75793605,  6.94619317,  6.98379284,  7.14087016,  7.30733432,  7.44328642,  7.45447425,  7.61212009,  7.84610147,  7.96033285,  8.1082247 ,  8.23029286,  8.3102389 ,  8.39762532,  8.52578344,  8.5371292 ,  8.59692855,  8.97423661,  9.00553857,  9.26550104,  9.27772813,  9.51352552,  9.71114516,  9.71409484,  9.74159559,  9.91756282,  9.92489755, 10.1444969 , 10.47930091, 10.56858196, 10.682801  , 10.82493233, 10.931275  , 11.05604983, 11.29569947, 11.86861602, 12.18933603, 12.28123635, 12.87289337, 13.64332165, 14.55503446, 15.34509727, 15.69881151, 17.81469576])
-  S.U=array([[ 6.4150030e-02,  6.4150030e-02,  6.4150030e-02, ...,  6.4150030e-02,  6.4150030e-02,  6.4150030e-02],
-         [-5.7537800e-02, -4.8178350e-02, -4.8659100e-02, ...,  5.1833370e-02,  5.4674730e-02,  5.2882060e-02],
-         [ 3.0069780e-02,  3.8563270e-02,  3.9172000e-02, ..., -7.0856530e-02, -6.8312640e-02, -7.2644230e-02],
-         ...,
-         [-1.9798000e-04,  1.1664100e-03, -1.7481000e-04, ...,  3.3000000e-07, -3.0000000e-08,  0.0000000e+00],
-         [-0.0000000e+00, -0.0000000e+00,  0.0000000e+00, ...,  1.8124802e-01,  3.0255300e-03,  1.8733600e-03],
-         [ 7.9000000e-07, -3.0000000e-07,  4.0000000e-08, ...,  0.0000000e+00,  0.0000000e+00, -0.0000000e+00]], shape=(243, 243))
+<pre><code>  S.E=array([ 0.        ,  6.77902924, 10.33912324, 17.23876334])
+  S.U=array([[ 0.5       ,  0.5       ,  0.5       ,  0.5       ],
+         [-0.46059115,  0.46059115, -0.53652194,  0.53652194],
+         [-0.5       , -0.5       ,  0.5       ,  0.5       ],
+         [-0.53652194,  0.53652194,  0.46059115, -0.46059115]])
   S.K=1
 </code></pre></li>
 </ul>
@@ -278,6 +275,8 @@ in the request, e.g.</p>
 
 <p>which forces recalculation of all the graph analysis results by clearing the
 cache of the outdated results from previous requests.</p></li>
+<li><p>Only weighted results consider branch status using zero-admittance. Unweighted results
+will return all possible connections regardless of branch status.</p></li>
 </ul>
 </div>
 
@@ -318,7 +317,7 @@ cache of the outdated results from previous requests.</p></li>
 </span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="sd">        &quot;branch&quot;: array([</span>
 </span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a><span class="sd">            [0, 1, 0.01008, 0.0504, 0.1025, 250, 250, 250, 0, 0, 1, -360, 360],</span>
 </span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="sd">            [0, 2, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 1, -360, 360],</span>
-</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="sd">            [1, 2, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 1, -360, 360],</span>
+</span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="sd">            [1, 2, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 0, -360, 360],</span>
 </span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="sd">            [1, 3, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 1, -360, 360],</span>
 </span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a><span class="sd">            [2, 3, 0.01272, 0.0636, 0.1275, 250, 250, 250, 0, 0, 1, -360, 360]</span>
 </span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a><span class="sd">            ]),</span>
@@ -354,10 +353,10 @@ cache of the outdated results from previous requests.</p></li>
 </span><span id="L-67"><a href="#L-67"><span class="linenos"> 67</span></a>
 </span><span id="L-68"><a href="#L-68"><span class="linenos"> 68</span></a><span class="sd">  which `print(W.todense())` outputs as</span>
 </span><span id="L-69"><a href="#L-69"><span class="linenos"> 69</span></a>
-</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a><span class="sd">        [[ 3.41112845-2.79645642j  3.97046957-3.25500645j  0.        +0.j          0.        +0.j          0.        +0.j        ]</span>
-</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a><span class="sd">         [-3.41112845+2.79645642j  0.        +0.j          3.97046957-3.25500645j  3.97046957-3.25500645j  0.        +0.j        ]</span>
-</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a><span class="sd">         [ 0.        +0.j         -3.97046957+3.25500645j -3.97046957+3.25500645j  0.        +0.j          3.0365804 -2.48940046j]</span>
-</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a><span class="sd">         [ 0.        +0.j          0.        +0.j          0.        +0.j         -3.97046957+3.25500645j -3.0365804 +2.48940046j]]</span>
+</span><span id="L-70"><a href="#L-70"><span class="linenos"> 70</span></a><span class="sd">        [[ 3.81562882,  5.16956162,  0.        ,  0.        ,  0.        ],</span>
+</span><span id="L-71"><a href="#L-71"><span class="linenos"> 71</span></a><span class="sd">         [-3.81562882,  0.        ,  0.        ,  5.16956162,  0.        ],</span>
+</span><span id="L-72"><a href="#L-72"><span class="linenos"> 72</span></a><span class="sd">         [ 0.        , -5.16956162,  0.        ,  0.        ,  3.02370585],</span>
+</span><span id="L-73"><a href="#L-73"><span class="linenos"> 73</span></a><span class="sd">         [ 0.        ,  0.        ,  0.        , -5.16956162, -3.02370585]]</span>
 </span><span id="L-74"><a href="#L-74"><span class="linenos"> 74</span></a>
 </span><span id="L-75"><a href="#L-75"><span class="linenos"> 75</span></a><span class="sd">- The graph Laplacian matrix is obtained using</span>
 </span><span id="L-76"><a href="#L-76"><span class="linenos"> 76</span></a>
@@ -365,39 +364,39 @@ cache of the outdated results from previous requests.</p></li>
 </span><span id="L-78"><a href="#L-78"><span class="linenos"> 78</span></a>
 </span><span id="L-79"><a href="#L-79"><span class="linenos"> 79</span></a><span class="sd">  which `print(G.todense())` outputs as</span>
 </span><span id="L-80"><a href="#L-80"><span class="linenos"> 80</span></a>
-</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a><span class="sd">        [[ 8.98519044-44.92595218j -3.81562882+19.07814408j -5.16956162+25.84780811j  0.         +0.j        ]</span>
-</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a><span class="sd">         [-3.81562882+19.07814408j 14.15475206-70.77376029j -5.16956162+25.84780811j -5.16956162+25.84780811j]</span>
-</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a><span class="sd">         [-5.16956162+25.84780811j -5.16956162+25.84780811j 13.3628291 -66.81414548j -3.02370585+15.11852927j]</span>
-</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a><span class="sd">         [ 0.         +0.j         -5.16956162+25.84780811j -3.02370585+15.11852927j  8.19326748-40.96633738j]]</span>
+</span><span id="L-81"><a href="#L-81"><span class="linenos"> 81</span></a><span class="sd">        [[ 8.98519044, -3.81562882, -5.16956162,  0.        ],</span>
+</span><span id="L-82"><a href="#L-82"><span class="linenos"> 82</span></a><span class="sd">         [-3.81562882,  8.98519044,  0.        , -5.16956162],</span>
+</span><span id="L-83"><a href="#L-83"><span class="linenos"> 83</span></a><span class="sd">         [-5.16956162,  0.        ,  8.19326748, -3.02370585],</span>
+</span><span id="L-84"><a href="#L-84"><span class="linenos"> 84</span></a><span class="sd">         [ 0.        , -5.16956162, -3.02370585,  8.19326748]]</span>
 </span><span id="L-85"><a href="#L-85"><span class="linenos"> 85</span></a>
 </span><span id="L-86"><a href="#L-86"><span class="linenos"> 86</span></a><span class="sd">- The spectral analysis results are obtained using</span>
 </span><span id="L-87"><a href="#L-87"><span class="linenos"> 87</span></a>
-</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a><span class="sd">        S = graph.spectral()</span>
+</span><span id="L-88"><a href="#L-88"><span class="linenos"> 88</span></a><span class="sd">        S = graph.spectral(weighted=True,complex_flows=False)</span>
 </span><span id="L-89"><a href="#L-89"><span class="linenos"> 89</span></a>
 </span><span id="L-90"><a href="#L-90"><span class="linenos"> 90</span></a><span class="sd">  which `print(f&quot;{S.E=}&quot;,f&quot;{S.U=}&quot;,f&quot;{S.K=}&quot;,sep=&quot;\n&quot;)` outputs as</span>
 </span><span id="L-91"><a href="#L-91"><span class="linenos"> 91</span></a>
-</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a><span class="sd">        S.E=array([-0.        ,  0.01975989,  0.03107986,  0.06764222,  0.0900409 ,  0.12893983,  0.14475458,  0.1803626 ,  0.18837462,  0.21693098,  0.22627614,  0.23525724,  0.25632602,  0.29241164,  0.3039104 ,  0.31917568,  0.32983981,  0.36011597,  0.39978127,  0.43446542,  0.43921655,  0.4485136 ,  0.46628586,  0.46825333,  0.48137538,  0.501443  ,  0.50838461,  0.53507925,  0.54176625,  0.54506606,  0.5605769 ,  0.57905423,  0.58578644,  0.61552598,  0.62368472,  0.62982085,  0.63423629,  0.64158652,  0.66329773,  0.66964409,  0.68619486,  0.70193996,  0.71688895,  0.72001135,  0.73749215,  0.74299587,  0.7437151 ,  0.75541561,  0.76188426,  0.77693339,  0.77984286,  0.801735  ,  0.80951114,  0.81013557,  0.81094488,  0.82348274,  0.83620688,  0.84244081,  0.86204113,  0.8635449 ,  0.87642207,  0.8982466 ,  0.90972498,  0.96629582,  0.98351359,  1.        ,  1.        ,  1.        ,  1.        ,  1.        ,  1.        ,  1.04497285,  1.07370271,  1.08041265,  1.09521455,  1.13081015,  1.14898623,  1.15272876,  1.17717625,  1.2102953 ,  1.24144093,  1.27394076,  1.31760309,  1.32766696,  1.35031495,  1.36908305,  1.40814091,  1.41351134,  1.46625766,  1.49155913,  1.53005203,  1.56137234,  1.64081855,  1.67611359,  1.68534014,  1.70041297,  1.74758906,  1.77589824,  1.83419596,  1.87679091,  1.95295469,  2.        ,  2.        ,  2.        ,  2.        ,  2.        ,  2.04649053,  2.06727852,  2.12457829,  2.1736644 ,  2.18573585,  2.26933925,  2.28864028,  2.29668929,  2.29743787,  2.31866598,  2.40326579,  2.45262625,  2.48537053,  2.49531437,  2.52973953,  2.58931507,  2.66079802,  2.68016492,  2.72522944,  2.77544872,  2.8356024 ,  2.85464407,  2.8939295 ,  2.90090201,  2.95191171,  2.95781988,  2.96655831,  3.        ,  3.        ,  3.05993593,  3.09473987,  3.17653361,  3.18115675,  3.1999872 ,  3.22987318,  3.24245457,  3.25412638,  3.25855324,  3.39344337,  3.41051131,  3.41421356,  3.43445103,  3.52941803,  3.54075842,  3.58910451,  3.60201195,  3.70346655,  3.71917357,  3.80956985,  3.82872949,  3.96053146,  4.02371594,  4.04007473,  4.08044545,  4.1013116 ,  4.13118355,  4.27769024,  4.30618326,  4.34315521,  4.38235605,  4.45028171,  4.46385309,  4.52787176,  4.57257574,  4.63778038,  4.83910756,  4.9984338 ,  5.0093837 ,  5.02673678,  5.05665585,  5.08338859,  5.10813597,  5.19052938,  5.22255201,  5.22907443,  5.30265904,  5.35309533,  5.38757123,  5.39050068,  5.47650731,  5.73041215,  5.94164693,  5.98100853,  6.0050047 ,  6.01754048,  6.05335841,  6.19120755,  6.25902048,  6.26705856,  6.28769418,  6.31650923,  6.5782406 ,  6.70495308,  6.75793605,  6.94619317,  6.98379284,  7.14087016,  7.30733432,  7.44328642,  7.45447425,  7.61212009,  7.84610147,  7.96033285,  8.1082247 ,  8.23029286,  8.3102389 ,  8.39762532,  8.52578344,  8.5371292 ,  8.59692855,  8.97423661,  9.00553857,  9.26550104,  9.27772813,  9.51352552,  9.71114516,  9.71409484,  9.74159559,  9.91756282,  9.92489755, 10.1444969 , 10.47930091, 10.56858196, 10.682801  , 10.82493233, 10.931275  , 11.05604983, 11.29569947, 11.86861602, 12.18933603, 12.28123635, 12.87289337, 13.64332165, 14.55503446, 15.34509727, 15.69881151, 17.81469576])</span>
-</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a><span class="sd">        S.U=array([[ 6.4150030e-02,  6.4150030e-02,  6.4150030e-02, ...,  6.4150030e-02,  6.4150030e-02,  6.4150030e-02],</span>
-</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a><span class="sd">               [-5.7537800e-02, -4.8178350e-02, -4.8659100e-02, ...,  5.1833370e-02,  5.4674730e-02,  5.2882060e-02],</span>
-</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a><span class="sd">               [ 3.0069780e-02,  3.8563270e-02,  3.9172000e-02, ..., -7.0856530e-02, -6.8312640e-02, -7.2644230e-02],</span>
-</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a><span class="sd">               ...,</span>
-</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a><span class="sd">               [-1.9798000e-04,  1.1664100e-03, -1.7481000e-04, ...,  3.3000000e-07, -3.0000000e-08,  0.0000000e+00],</span>
-</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a><span class="sd">               [-0.0000000e+00, -0.0000000e+00,  0.0000000e+00, ...,  1.8124802e-01,  3.0255300e-03,  1.8733600e-03],</span>
-</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a><span class="sd">               [ 7.9000000e-07, -3.0000000e-07,  4.0000000e-08, ...,  0.0000000e+00,  0.0000000e+00, -0.0000000e+00]], shape=(243, 243))</span>
-</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a><span class="sd">        S.K=1</span>
-</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a>
-</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a><span class="sd"># Caveats</span>
-</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a>
-</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a><span class="sd">- The result of graph analyses are cached in case they are requested more than</span>
-</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="sd">  once. The cached values are based on the network bus and branch data at the</span>
-</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a><span class="sd">  time the cache was refreshed. If the bus or branch values have changed</span>
-</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a><span class="sd">  since the last refresh, then the `refresh=True` option should be included</span>
-</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a><span class="sd">  in the request, e.g.</span>
-</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a>
-</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a><span class="sd">    graph.incidence(refresh=True)</span>
+</span><span id="L-92"><a href="#L-92"><span class="linenos"> 92</span></a><span class="sd">        S.E=array([ 0.        ,  6.77902924, 10.33912324, 17.23876334])</span>
+</span><span id="L-93"><a href="#L-93"><span class="linenos"> 93</span></a><span class="sd">        S.U=array([[ 0.5       ,  0.5       ,  0.5       ,  0.5       ],</span>
+</span><span id="L-94"><a href="#L-94"><span class="linenos"> 94</span></a><span class="sd">               [-0.46059115,  0.46059115, -0.53652194,  0.53652194],</span>
+</span><span id="L-95"><a href="#L-95"><span class="linenos"> 95</span></a><span class="sd">               [-0.5       , -0.5       ,  0.5       ,  0.5       ],</span>
+</span><span id="L-96"><a href="#L-96"><span class="linenos"> 96</span></a><span class="sd">               [-0.53652194,  0.53652194,  0.46059115, -0.46059115]])</span>
+</span><span id="L-97"><a href="#L-97"><span class="linenos"> 97</span></a><span class="sd">        S.K=1</span>
+</span><span id="L-98"><a href="#L-98"><span class="linenos"> 98</span></a><span class="sd">        </span>
+</span><span id="L-99"><a href="#L-99"><span class="linenos"> 99</span></a><span class="sd"># Caveats</span>
+</span><span id="L-100"><a href="#L-100"><span class="linenos">100</span></a>
+</span><span id="L-101"><a href="#L-101"><span class="linenos">101</span></a><span class="sd">- The result of graph analyses are cached in case they are requested more than</span>
+</span><span id="L-102"><a href="#L-102"><span class="linenos">102</span></a><span class="sd">  once. The cached values are based on the network bus and branch data at the</span>
+</span><span id="L-103"><a href="#L-103"><span class="linenos">103</span></a><span class="sd">  time the cache was refreshed. If the bus or branch values have changed</span>
+</span><span id="L-104"><a href="#L-104"><span class="linenos">104</span></a><span class="sd">  since the last refresh, then the `refresh=True` option should be included</span>
+</span><span id="L-105"><a href="#L-105"><span class="linenos">105</span></a><span class="sd">  in the request, e.g.</span>
+</span><span id="L-106"><a href="#L-106"><span class="linenos">106</span></a>
+</span><span id="L-107"><a href="#L-107"><span class="linenos">107</span></a><span class="sd">    graph.incidence(refresh=True)</span>
+</span><span id="L-108"><a href="#L-108"><span class="linenos">108</span></a>
+</span><span id="L-109"><a href="#L-109"><span class="linenos">109</span></a><span class="sd">  which forces recalculation of all the graph analysis results by clearing the</span>
+</span><span id="L-110"><a href="#L-110"><span class="linenos">110</span></a><span class="sd">  cache of the outdated results from previous requests.</span>
 </span><span id="L-111"><a href="#L-111"><span class="linenos">111</span></a>
-</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a><span class="sd">  which forces recalculation of all the graph analysis results by clearing the</span>
-</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="sd">  cache of the outdated results from previous requests.</span>
+</span><span id="L-112"><a href="#L-112"><span class="linenos">112</span></a><span class="sd">- Only weighted results consider branch status using zero-admittance. Unweighted results</span>
+</span><span id="L-113"><a href="#L-113"><span class="linenos">113</span></a><span class="sd">  will return all possible connections regardless of branch status.</span>
 </span><span id="L-114"><a href="#L-114"><span class="linenos">114</span></a><span class="sd">&quot;&quot;&quot;</span>
 </span><span id="L-115"><a href="#L-115"><span class="linenos">115</span></a><span class="c1"># pylint: enable=line-too-long</span>
 </span><span id="L-116"><a href="#L-116"><span class="linenos">116</span></a>
@@ -590,7 +589,7 @@ cache of the outdated results from previous requests.</p></li>
 </span><span id="L-303"><a href="#L-303"><span class="linenos">303</span></a>
 </span><span id="L-304"><a href="#L-304"><span class="linenos">304</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">incidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
 </span><span id="L-305"><a href="#L-305"><span class="linenos">305</span></a>        <span class="n">refresh</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="L-306"><a href="#L-306"><span class="linenos">306</span></a>        <span class="n">complex_flows</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="L-306"><a href="#L-306"><span class="linenos">306</span></a>        <span class="n">complex_flows</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 </span><span id="L-307"><a href="#L-307"><span class="linenos">307</span></a>        <span class="n">weighted</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 </span><span id="L-308"><a href="#L-308"><span class="linenos">308</span></a>        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">:</span>
 </span><span id="L-309"><a href="#L-309"><span class="linenos">309</span></a><span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get network indicidence matrix</span>
@@ -603,7 +602,7 @@ cache of the outdated results from previous requests.</p></li>
 </span><span id="L-316"><a href="#L-316"><span class="linenos">316</span></a><span class="sd">          instead of conductance (weighted only)</span>
 </span><span id="L-317"><a href="#L-317"><span class="linenos">317</span></a><span class="sd">    </span>
 </span><span id="L-318"><a href="#L-318"><span class="linenos">318</span></a><span class="sd">        - `weighted`: generated weighted incidence based on square root of</span>
-</span><span id="L-319"><a href="#L-319"><span class="linenos">319</span></a><span class="sd">          line admittance (inverse of impedance $R+jX$)</span>
+</span><span id="L-319"><a href="#L-319"><span class="linenos">319</span></a><span class="sd">          line admittance (inverse of impedance $R+jX$) for closed lines</span>
 </span><span id="L-320"><a href="#L-320"><span class="linenos">320</span></a><span class="sd">    </span>
 </span><span id="L-321"><a href="#L-321"><span class="linenos">321</span></a><span class="sd">        # Returns</span>
 </span><span id="L-322"><a href="#L-322"><span class="linenos">322</span></a><span class="sd">        </span>
@@ -635,7 +634,7 @@ cache of the outdated results from previous requests.</p></li>
 </span><span id="L-348"><a href="#L-348"><span class="linenos">348</span></a>                <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">Z</span><span class="p">,[</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">),</span><span class="n">tbus</span><span class="p">]),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span>
 </span><span id="L-349"><a href="#L-349"><span class="linenos">349</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span>
 </span><span id="L-350"><a href="#L-350"><span class="linenos">350</span></a>
-</span><span id="L-351"><a href="#L-351"><span class="linenos">351</span></a>        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">branch</span><span class="p">[</span><span class="s2">&quot;BR_STATUS&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+</span><span id="L-351"><a href="#L-351"><span class="linenos">351</span></a>        <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
 </span><span id="L-352"><a href="#L-352"><span class="linenos">352</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">Z</span><span class="p">,[</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">),</span><span class="n">fbus</span><span class="p">]),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">))</span> <span class="o">-</span>\
 </span><span id="L-353"><a href="#L-353"><span class="linenos">353</span></a>            <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">Z</span><span class="p">,[</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">),</span><span class="n">tbus</span><span class="p">]),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span>
 </span><span id="L-354"><a href="#L-354"><span class="linenos">354</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span>
@@ -781,7 +780,7 @@ cache of the outdated results from previous requests.</p></li>
 </span><span id="L-494"><a href="#L-494"><span class="linenos">494</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">graph</span><span class="o">.</span><span class="n">incidence</span><span class="p">(</span><span class="n">weighted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">todense</span><span class="p">()</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span><span id="L-495"><a href="#L-495"><span class="linenos">495</span></a>    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">graph</span><span class="o">.</span><span class="n">laplacian</span><span class="p">(</span><span class="n">weighted</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span><span class="o">.</span><span class="n">todense</span><span class="p">()</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">)</span>
 </span><span id="L-496"><a href="#L-496"><span class="linenos">496</span></a>
-</span><span id="L-497"><a href="#L-497"><span class="linenos">497</span></a>    <span class="n">S</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">spectral</span><span class="p">(</span><span class="n">weighted</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span><span class="n">complex_flows</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</span><span id="L-497"><a href="#L-497"><span class="linenos">497</span></a>    <span class="n">S</span> <span class="o">=</span> <span class="n">graph</span><span class="o">.</span><span class="n">spectral</span><span class="p">(</span><span class="n">weighted</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span><span class="n">complex_flows</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
 </span><span id="L-498"><a href="#L-498"><span class="linenos">498</span></a>    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;*** Wheatstone ***&quot;</span><span class="p">,</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">S</span><span class="o">.</span><span class="n">E</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">,</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">S</span><span class="o">.</span><span class="n">U</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">,</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">S</span><span class="o">.</span><span class="n">K</span><span class="si">=}</span><span class="s2">&quot;</span><span class="p">,</span><span class="n">sep</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">)</span>
 </span><span id="L-499"><a href="#L-499"><span class="linenos">499</span></a>
 </span><span id="L-500"><a href="#L-500"><span class="linenos">500</span></a>
@@ -993,7 +992,7 @@ cache of the outdated results from previous requests.</p></li>
 </span><span id="PPGraph-304"><a href="#PPGraph-304"><span class="linenos">304</span></a>
 </span><span id="PPGraph-305"><a href="#PPGraph-305"><span class="linenos">305</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">incidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
 </span><span id="PPGraph-306"><a href="#PPGraph-306"><span class="linenos">306</span></a>        <span class="n">refresh</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="PPGraph-307"><a href="#PPGraph-307"><span class="linenos">307</span></a>        <span class="n">complex_flows</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="PPGraph-307"><a href="#PPGraph-307"><span class="linenos">307</span></a>        <span class="n">complex_flows</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 </span><span id="PPGraph-308"><a href="#PPGraph-308"><span class="linenos">308</span></a>        <span class="n">weighted</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 </span><span id="PPGraph-309"><a href="#PPGraph-309"><span class="linenos">309</span></a>        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">:</span>
 </span><span id="PPGraph-310"><a href="#PPGraph-310"><span class="linenos">310</span></a><span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get network indicidence matrix</span>
@@ -1006,7 +1005,7 @@ cache of the outdated results from previous requests.</p></li>
 </span><span id="PPGraph-317"><a href="#PPGraph-317"><span class="linenos">317</span></a><span class="sd">          instead of conductance (weighted only)</span>
 </span><span id="PPGraph-318"><a href="#PPGraph-318"><span class="linenos">318</span></a><span class="sd">    </span>
 </span><span id="PPGraph-319"><a href="#PPGraph-319"><span class="linenos">319</span></a><span class="sd">        - `weighted`: generated weighted incidence based on square root of</span>
-</span><span id="PPGraph-320"><a href="#PPGraph-320"><span class="linenos">320</span></a><span class="sd">          line admittance (inverse of impedance $R+jX$)</span>
+</span><span id="PPGraph-320"><a href="#PPGraph-320"><span class="linenos">320</span></a><span class="sd">          line admittance (inverse of impedance $R+jX$) for closed lines</span>
 </span><span id="PPGraph-321"><a href="#PPGraph-321"><span class="linenos">321</span></a><span class="sd">    </span>
 </span><span id="PPGraph-322"><a href="#PPGraph-322"><span class="linenos">322</span></a><span class="sd">        # Returns</span>
 </span><span id="PPGraph-323"><a href="#PPGraph-323"><span class="linenos">323</span></a><span class="sd">        </span>
@@ -1038,7 +1037,7 @@ cache of the outdated results from previous requests.</p></li>
 </span><span id="PPGraph-349"><a href="#PPGraph-349"><span class="linenos">349</span></a>                <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">Z</span><span class="p">,[</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">),</span><span class="n">tbus</span><span class="p">]),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span>
 </span><span id="PPGraph-350"><a href="#PPGraph-350"><span class="linenos">350</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span>
 </span><span id="PPGraph-351"><a href="#PPGraph-351"><span class="linenos">351</span></a>
-</span><span id="PPGraph-352"><a href="#PPGraph-352"><span class="linenos">352</span></a>        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">branch</span><span class="p">[</span><span class="s2">&quot;BR_STATUS&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+</span><span id="PPGraph-352"><a href="#PPGraph-352"><span class="linenos">352</span></a>        <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
 </span><span id="PPGraph-353"><a href="#PPGraph-353"><span class="linenos">353</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">Z</span><span class="p">,[</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">),</span><span class="n">fbus</span><span class="p">]),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">))</span> <span class="o">-</span>\
 </span><span id="PPGraph-354"><a href="#PPGraph-354"><span class="linenos">354</span></a>            <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">Z</span><span class="p">,[</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">),</span><span class="n">tbus</span><span class="p">]),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span>
 </span><span id="PPGraph-355"><a href="#PPGraph-355"><span class="linenos">355</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span>
@@ -1624,7 +1623,7 @@ connecting bus $i$ and bus $j$ and a 0 otherwise.</p>
 <div class="attr function">
             
         <span class="def">def</span>
-        <span class="name">incidence</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">refresh</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">complex_flows</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span>,</span><span class="param">	<span class="n">weighted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">_csr</span><span class="o">.</span><span class="n">csr_matrix</span>:</span></span>
+        <span class="name">incidence</span><span class="signature pdoc-code multiline">(<span class="param">	<span class="bp">self</span>,</span><span class="param">	<span class="n">refresh</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">complex_flows</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>,</span><span class="param">	<span class="n">weighted</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span></span><span class="return-annotation">) -> <span class="n">scipy</span><span class="o">.</span><span class="n">sparse</span><span class="o">.</span><span class="n">_csr</span><span class="o">.</span><span class="n">csr_matrix</span>:</span></span>
 
                 <label class="view-source-button" for="PPGraph.incidence-view-source"><span>View Source</span></label>
 
@@ -1632,7 +1631,7 @@ connecting bus $i$ and bus $j$ and a 0 otherwise.</p>
     <a class="headerlink" href="#PPGraph.incidence"></a>
             <div class="pdoc-code codehilite"><pre><span></span><span id="PPGraph.incidence-305"><a href="#PPGraph.incidence-305"><span class="linenos">305</span></a>    <span class="k">def</span><span class="w"> </span><span class="nf">incidence</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span>
 </span><span id="PPGraph.incidence-306"><a href="#PPGraph.incidence-306"><span class="linenos">306</span></a>        <span class="n">refresh</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
-</span><span id="PPGraph.incidence-307"><a href="#PPGraph.incidence-307"><span class="linenos">307</span></a>        <span class="n">complex_flows</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+</span><span id="PPGraph.incidence-307"><a href="#PPGraph.incidence-307"><span class="linenos">307</span></a>        <span class="n">complex_flows</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 </span><span id="PPGraph.incidence-308"><a href="#PPGraph.incidence-308"><span class="linenos">308</span></a>        <span class="n">weighted</span><span class="p">:</span><span class="nb">bool</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
 </span><span id="PPGraph.incidence-309"><a href="#PPGraph.incidence-309"><span class="linenos">309</span></a>        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">:</span>
 </span><span id="PPGraph.incidence-310"><a href="#PPGraph.incidence-310"><span class="linenos">310</span></a><span class="w">        </span><span class="sa">r</span><span class="sd">&quot;&quot;&quot;Get network indicidence matrix</span>
@@ -1645,7 +1644,7 @@ connecting bus $i$ and bus $j$ and a 0 otherwise.</p>
 </span><span id="PPGraph.incidence-317"><a href="#PPGraph.incidence-317"><span class="linenos">317</span></a><span class="sd">          instead of conductance (weighted only)</span>
 </span><span id="PPGraph.incidence-318"><a href="#PPGraph.incidence-318"><span class="linenos">318</span></a><span class="sd">    </span>
 </span><span id="PPGraph.incidence-319"><a href="#PPGraph.incidence-319"><span class="linenos">319</span></a><span class="sd">        - `weighted`: generated weighted incidence based on square root of</span>
-</span><span id="PPGraph.incidence-320"><a href="#PPGraph.incidence-320"><span class="linenos">320</span></a><span class="sd">          line admittance (inverse of impedance $R+jX$)</span>
+</span><span id="PPGraph.incidence-320"><a href="#PPGraph.incidence-320"><span class="linenos">320</span></a><span class="sd">          line admittance (inverse of impedance $R+jX$) for closed lines</span>
 </span><span id="PPGraph.incidence-321"><a href="#PPGraph.incidence-321"><span class="linenos">321</span></a><span class="sd">    </span>
 </span><span id="PPGraph.incidence-322"><a href="#PPGraph.incidence-322"><span class="linenos">322</span></a><span class="sd">        # Returns</span>
 </span><span id="PPGraph.incidence-323"><a href="#PPGraph.incidence-323"><span class="linenos">323</span></a><span class="sd">        </span>
@@ -1677,7 +1676,7 @@ connecting bus $i$ and bus $j$ and a 0 otherwise.</p>
 </span><span id="PPGraph.incidence-349"><a href="#PPGraph.incidence-349"><span class="linenos">349</span></a>                <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">Z</span><span class="p">,[</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">),</span><span class="n">tbus</span><span class="p">]),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span>
 </span><span id="PPGraph.incidence-350"><a href="#PPGraph.incidence-350"><span class="linenos">350</span></a>            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">W</span>
 </span><span id="PPGraph.incidence-351"><a href="#PPGraph.incidence-351"><span class="linenos">351</span></a>
-</span><span id="PPGraph.incidence-352"><a href="#PPGraph.incidence-352"><span class="linenos">352</span></a>        <span class="n">Z</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">branch</span><span class="p">[</span><span class="s2">&quot;BR_STATUS&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span>
+</span><span id="PPGraph.incidence-352"><a href="#PPGraph.incidence-352"><span class="linenos">352</span></a>        <span class="n">Z</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">)</span>
 </span><span id="PPGraph.incidence-353"><a href="#PPGraph.incidence-353"><span class="linenos">353</span></a>        <span class="bp">self</span><span class="o">.</span><span class="n">B</span> <span class="o">=</span> <span class="p">(</span><span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">Z</span><span class="p">,[</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">),</span><span class="n">fbus</span><span class="p">]),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">))</span> <span class="o">-</span>\
 </span><span id="PPGraph.incidence-354"><a href="#PPGraph.incidence-354"><span class="linenos">354</span></a>            <span class="n">sp</span><span class="o">.</span><span class="n">csr_matrix</span><span class="p">((</span><span class="n">Z</span><span class="p">,[</span><span class="nb">range</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">),</span><span class="n">tbus</span><span class="p">]),</span><span class="n">shape</span><span class="o">=</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">M</span><span class="p">,</span><span class="bp">self</span><span class="o">.</span><span class="n">N</span><span class="p">)))</span><span class="o">.</span><span class="n">T</span>
 </span><span id="PPGraph.incidence-355"><a href="#PPGraph.incidence-355"><span class="linenos">355</span></a>        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">B</span>
@@ -1693,7 +1692,7 @@ connecting bus $i$ and bus $j$ and a 0 otherwise.</p>
 <li><p><code>complex_flows</code>: if true produces incidence matrix using admittance
 instead of conductance (weighted only)</p></li>
 <li><p><code>weighted</code>: generated weighted incidence based on square root of
-line admittance (inverse of impedance $R+jX$)</p></li>
+line admittance (inverse of impedance $R+jX$) for closed lines</p></li>
 </ul>
 
 <h1 id="returns">Returns</h1>
