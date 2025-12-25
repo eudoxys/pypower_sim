@@ -95,7 +95,7 @@ then we have the following graph analysis results.
                [-0.5       , -0.5       ,  0.5       ,  0.5       ],
                [-0.53652194,  0.53652194,  0.46059115, -0.46059115]])
         S.K=1
-        
+
 # Caveats
 
 - The result of graph analyses are cached in case they are requested more than
@@ -104,7 +104,7 @@ then we have the following graph analysis results.
   since the last refresh, then the `refresh=True` option should be included
   in the request, e.g.
 
-    graph.incidence(refresh=True)
+        graph.incidence(refresh=True)
 
   which forces recalculation of all the graph analysis results by clearing the
   cache of the outdated results from previous requests.
