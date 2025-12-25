@@ -9,17 +9,17 @@ shown below in Figure 1.
 ```mermaid
 flowchart LR
 
-    PPCLI --> pypower_sim
+    PPCLI[<a href="pypower_sim/ppcli.html">PPCLI</a>] --> pypower_sim
     
     case(case) --> PPModel
-    inputs(csv) --> input[PPData]
+    inputs(csv) --> input[<a href="pypower_sim/ppdata.html">PPData</a>]
 
     subgraph pypower_sim
-        input --> PPSolver
+        input --> PPSolver[<a href="pypower_sim/ppsolver.html">PPSolver</a>]
         PPModel --> PPSolver
-        PPSolver --> PPModel
-        PPModel --> PPPlots
-        PPModel --> kml
+        PPSolver --> PPModel[<a href="pypower_sim/ppmodel.html">PPModel</a>]
+        PPModel --> PPPlots[<a href="pypower_sim/ppplots.html">PPPlots</a>]
+        PPModel --> kml[<a href="pypower_sim/kml.html">kml</a>]
     end
 
     PPSolver --> data(csv)

@@ -124,17 +124,17 @@ shown below in Figure 1.</p>
 
 <pre class="mermaid-pre"><div class="mermaid">flowchart LR
 
-    PPCLI --&gt; pypower_sim
+    PPCLI[&lt;a href="pypower_sim/ppcli.html"&gt;PPCLI&lt;/a&gt;] --&gt; pypower_sim
 
     case(case) --&gt; PPModel
-    inputs(csv) --&gt; input[PPData]
+    inputs(csv) --&gt; input[&lt;a href="pypower_sim/ppdata.html"&gt;PPData&lt;/a&gt;]
 
     subgraph pypower_sim
-        input --&gt; PPSolver
+        input --&gt; PPSolver[&lt;a href="pypower_sim/ppsolver.html"&gt;PPSolver&lt;/a&gt;]
         PPModel --&gt; PPSolver
-        PPSolver --&gt; PPModel
-        PPModel --&gt; PPPlots
-        PPModel --&gt; kml
+        PPSolver --&gt; PPModel[&lt;a href="pypower_sim/ppmodel.html"&gt;PPModel&lt;/a&gt;]
+        PPModel --&gt; PPPlots[&lt;a href="pypower_sim/ppplots.html"&gt;PPPlots&lt;/a&gt;]
+        PPModel --&gt; kml[&lt;a href="pypower_sim/kml.html"&gt;kml&lt;/a&gt;]
     end
 
     PPSolver --&gt; data(csv)
@@ -285,17 +285,17 @@ solver.run_timeseries(
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="sd">```mermaid</span>
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="sd">flowchart LR</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a>
-</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="sd">    PPCLI --&gt; pypower_sim</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="sd">    PPCLI[&lt;a href=&quot;pypower_sim/ppcli.html&quot;&gt;PPCLI&lt;/a&gt;] --&gt; pypower_sim</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="sd">    </span>
 </span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="sd">    case(case) --&gt; PPModel</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="sd">    inputs(csv) --&gt; input[PPData]</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="sd">    inputs(csv) --&gt; input[&lt;a href=&quot;pypower_sim/ppdata.html&quot;&gt;PPData&lt;/a&gt;]</span>
 </span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a><span class="sd">    subgraph pypower_sim</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a><span class="sd">        input --&gt; PPSolver</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a><span class="sd">        input --&gt; PPSolver[&lt;a href=&quot;pypower_sim/ppsolver.html&quot;&gt;PPSolver&lt;/a&gt;]</span>
 </span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a><span class="sd">        PPModel --&gt; PPSolver</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="sd">        PPSolver --&gt; PPModel</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="sd">        PPModel --&gt; PPPlots</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="sd">        PPModel --&gt; kml</span>
+</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="sd">        PPSolver --&gt; PPModel[&lt;a href=&quot;pypower_sim/ppmodel.html&quot;&gt;PPModel&lt;/a&gt;]</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="sd">        PPModel --&gt; PPPlots[&lt;a href=&quot;pypower_sim/ppplots.html&quot;&gt;PPPlots&lt;/a&gt;]</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="sd">        PPModel --&gt; kml[&lt;a href=&quot;pypower_sim/kml.html&quot;&gt;kml&lt;/a&gt;]</span>
 </span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a><span class="sd">    end</span>
 </span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a>
 </span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a><span class="sd">    PPSolver --&gt; data(csv)</span>
