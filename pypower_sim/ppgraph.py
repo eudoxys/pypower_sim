@@ -129,15 +129,16 @@ class PPGraph:
         self.model = model
 
         # pylint: disable=invalid-name
-        self.N = None
-        self.M = None
-        self.D = None # degree matrix
         self.A = None # admittance matrix
-        self.L = None # (unweighted) Laplacian matrix
-        self.G = None # (weighted) graph Laplacian matrix
         self.B = None # unweighted incidence matrix
-        self.W = None # weighted incidence matrix
+        self.D = None # degree matrix
+        self.G = None # (weighted) graph Laplacian matrix
+        self.L = None # (unweighted) Laplacian matrix
+        self.M = None
+        self.N = None
         self.S = None # spectral analysis results
+        self.W = None # weighted incidence matrix
+        self.Z = None # impedance matrix
 
         self.refresh()
 
@@ -160,13 +161,14 @@ class PPGraph:
         self.M = len(self.branch)
 
         # clear cache
-        self.D = None # degree matrix
         self.A = None # admittance matrix
-        self.L = None # (unweighted) Laplacian matrix
-        self.G = None # (weighted) graph Laplacian matrix
         self.B = None # unweighted incidence matrix
-        self.W = None # weighted incidence matrix
+        self.D = None # degree matrix
+        self.G = None # (weighted) graph Laplacian matrix
+        self.L = None # (unweighted) Laplacian matrix
         self.S = None # spectral analysis results
+        self.W = None # weighted incidence matrix
+        self.Z = None # impedance matrix
 
     def degree(self,
         refresh:bool=False,
@@ -233,6 +235,48 @@ class PPGraph:
 
         return self.A.tocsr()
 
+    def impedance(self,
+        refresh:bool=False,
+        part:str|None=None,
+        ):
+        """Get network branch impedances
+
+        # Arguments
+        
+        - `refresh`: force recalculation of previous results
+        
+        - `part`: get complex part `{'r','i','m','a','d'}
+    
+        # Returns
+        
+        - `sp.csr_matrix`: impedance matrix
+
+        # Description
+        
+        Return the branch impedances for closed branches or zero for open branches.
+        """        
+        if refresh:
+            self.refresh()
+        elif self.Z is None:
+            self.Z = np.array([complex(x,y)
+                for x,y in self.branch[["BR_R","BR_X"]].values])
+
+        match part:
+            case 'r':
+                return self.Z.real
+            case 'i':
+                return self.Z.imag
+            case 'm':
+                return np.abs(self.Z)
+            case 'a':
+                return np.angle(self.Z)
+            case 'd':
+                return np.angle(self.Z) * 180 / np.pi
+            case None:
+                return self.Z
+            case '_':
+                raise ValueError(f"{part=} is invalid")
+
     def incidence(self,
         refresh:bool=False,
         complex_flows:bool=True,
@@ -272,31 +316,16 @@ class PPGraph:
 
         if weighted:
 
-            weights = np.array([np.sqrt(1/complex(x,y))
-                for x,y in self.branch[["BR_R","BR_X"]].values])
+            Z = sp.diags([(1/x if np.abs(x)!=0 else 0) for x in self.impedance()])
             if not complex_flows:
-                weights = weights.real
-            self.W = (sp.csr_matrix(
-                    (weights,[range(self.M),fbus]),
-                    shape=(self.M,self.N),
-
-                ) -\
-                sp.csr_matrix(
-                    (weights,[range(self.M),tbus]),
-                    shape=(self.M,self.N),
-                )).T
+                Z = Z.real
+            self.W = (sp.csr_matrix((Z,[range(self.M),fbus]),shape=(self.M,self.N)) -\
+                sp.csr_matrix((Z,[range(self.M),tbus]),shape=(self.M,self.N))).T
             return self.W
 
-        weights = np.ones(self.M)
-        self.B = (sp.csr_matrix(
-                (weights,[range(self.M),fbus]),
-                shape=(self.M,self.N),
-
-            ) -\
-            sp.csr_matrix(
-                (weights,[range(self.M),tbus]),
-                shape=(self.M,self.N),
-            )).T
+        Z = np.ones(self.M)
+        self.B = (sp.csr_matrix((Z,[range(self.M),fbus]),shape=(self.M,self.N)) -\
+            sp.csr_matrix((Z,[range(self.M),tbus]),shape=(self.M,self.N))).T
         return self.B
 
     def laplacian(self,
@@ -339,8 +368,11 @@ class PPGraph:
         if weighted:
 
             # pylint: disable=invalid-name
-            W = self.incidence(complex_flows=complex_flows)
-            self.G = W * W.T
+            Z = sp.diags([(1/x if np.abs(x)!=0 else 0) for x in self.impedance()])
+            if not complex_flows:
+                Z = Z.real
+            W = self.incidence(weighted=False)
+            self.G = W @ Z @ W.T
             return self.G.tocsr()
 
         self.L = self.degree() - self.adjacency()
