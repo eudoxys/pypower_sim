@@ -127,18 +127,39 @@ class PPGraph:
         branch network model
         """
         self.model = model
+        """Model object (`pypower_sim.ppmodel.PPModel)"""
 
         # pylint: disable=invalid-name
         self.A = None # admittance matrix
+        """Admittance matrix (`numpy.csr_matrix`)"""
+
         self.B = None # unweighted incidence matrix
+        """Unweighted incidence matrix (`numpy.csr_matrix`)"""
+
         self.D = None # degree matrix
+        """Degree matrix (`numpy.csr_matrix`)"""
+
         self.G = None # (weighted) graph Laplacian matrix
+        """Graph Laplacian matrix (`numpy.csr_matrix`)"""
+
         self.L = None # (unweighted) Laplacian matrix
+        """Laplacian matrix (`numpy.csr_matrix`)"""
+
         self.M = None
+        """Number branches (`int`)"""
+
         self.N = None
+        """Number of busses (`int`)"""
+
         self.S = None # spectral analysis results
+        """Spectral analysis results (`collections.namedtuple('spectral',['E','U','K'])`)"""
+
         self.W = None # weighted incidence matrix
+        """Weighted incidence matrix (`numpy.csr_matrix`)"""
+
         self.Z = None # impedance matrix
+        """Branch impedance matrix (`numpy.nd_array`)"""
+
 
         self.refresh()
 
@@ -249,7 +270,7 @@ class PPGraph:
     
         # Returns
         
-        - `sp.csr_matrix`: impedance matrix
+        - `np.ndarray`: branch impedance vector
 
         # Description
         
