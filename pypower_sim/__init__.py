@@ -11,20 +11,26 @@ flowchart LR
 
     PPCLI[<a href="pypower_sim/ppcli.html">PPCLI</a>] --> pypower_sim
     
-    case(case) --> PPModel
+    case(case) --> PPModel[<a href="pypower_sim/ppmodel.html">PPModel</a>]
     inputs(csv) --> input[<a href="pypower_sim/ppdata.html">PPData</a>]
 
     subgraph pypower_sim
         input --> PPSolver[<a href="pypower_sim/ppsolver.html">PPSolver</a>]
-        PPModel --> PPSolver
-        PPSolver --> PPModel[<a href="pypower_sim/ppmodel.html">PPModel</a>]
+        PPModel <--> PPSolver
         PPModel --> PPPlots[<a href="pypower_sim/ppplots.html">PPPlots</a>]
-        PPModel --> kml[<a href="pypower_sim/kml.html">kml</a>]
+        PPModel --> KML[<a href="pypower_sim/kml.html">KML</a>]
+        PPSolver <--> PPGraph[<a href="pypower_sim/ppgraph.html">PPGraph</a>]
+    end
+
+        PPSolver <--> pypower
+    subgraph pypower
+        runpf
+        runopf
     end
 
     PPSolver --> data(csv)
     PPPlots --> images(png)
-    kml --> viewer[Google Earth]
+    KML --> kml
 ```
 Figure 1: `pypower_sim` package architecture
 
