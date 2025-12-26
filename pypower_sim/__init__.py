@@ -1,10 +1,10 @@
 """PyPOWER timeseries simulation
 
-The `pypower_sim` package support time-series simulation using 
-[pypower](https://github.com/rwl/pypower). The simulation accept
-`pypower` case files for the model and CSV files for time-series
-data. The output can be CSV, PNG, or Google Earth KML files, as
-shown below in Figure 1.
+The `pypower_sim` package supports time-series simulation and optimizations
+using[`pypower`](https://github.com/rwl/pypower) and [`cvxpy`]
+(https://www.cvxpy.org/). The simulation accept `pypower` case files for the
+model and CSV files for time-series data. The output can be CSV, PNG, or
+Google Earth KML files, as shown below in Figure 1.
 
 ```mermaid
 flowchart LR
@@ -37,6 +37,11 @@ flowchart LR
     KML --> kml[/kml/]
 ```
 Figure 1: `pypower_sim` package architecture
+
+Optimal DC and AC powerflow and optimal generator, capacitor, and condenser
+sizing/placement solvers are available for `pypower` cases. The optimizers
+can be used to ensure that powerflow solutions are feasible and do not
+require load curtailment.
 
 # Description
 
