@@ -17,18 +17,22 @@ flowchart LR
     subgraph pypower_sim
         input --> PPSolver[<a href="pypower_sim/ppsolver.html">PPSolver</a>]
         PPModel <--> PPSolver
-        PPModel --> PPPlots[<a href="pypower_sim/ppplots.html">PPPlots</a>]
-        PPModel --> KML[<a href="pypower_sim/kml.html">KML</a>]
-        PPSolver <--> PPGraph[<a href="pypower_sim/ppgraph.html">PPGraph</a>]
+        PPModel -----> PPPlots[<a href="pypower_sim/ppplots.html">PPPlots</a>]
+        runosp <--> PPGraph[<a href="pypower_sim/ppgraph.html">PPGraph</a>]
+        PPModel -----> KML[<a href="pypower_sim/kml.html">KML</a>]
+        PPSolver <---> runosp[<a href="pypower_sim/runosp.html">runosp</a>]
+        PPSolver ----> outputs[<a href="pypower_sim/ppdata.html">PPData</a>]
+
     end
 
-        PPSolver <--> pypower
     subgraph pypower
         runpf
         runopf
     end
 
-    PPSolver --> data(csv)
+    PPSolver <-----> pypower
+    
+    outputs --> data(csv)
     PPPlots --> images(png)
     KML --> kml
 ```

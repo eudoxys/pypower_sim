@@ -163,7 +163,6 @@ class PPGraph:
         self.Z = None # impedance matrix
         """Branch impedance matrix (`numpy.nd_array`)"""
 
-
         self.refresh()
 
     def refresh(self):

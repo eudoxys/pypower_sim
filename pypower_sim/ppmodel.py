@@ -70,6 +70,7 @@ from pypower import idx_gen, idx_bus # used indirectly in get_header()
 # pylint: enable=unused-import
 from pypower import idx_cost as idx_gencost
 from .ppgis import idx_gis
+from .ppgraph import PPGraph
 
 from .ppjson import PypowerModelEncoder, PypowerModelDecoder
 from .kml import KML
@@ -878,3 +879,16 @@ def {self.name}():
 
         linklist = [[int(y) for y in x] for x in links]
         return linklist
+
+    # package-only utility methods
+    def _data(self):
+        return PPData(self)
+
+    def _plots(self):
+        return PPPlots(self)
+
+    def _solver(self):
+        return PPSolver(self)
+
+    def _graph(self):
+        return PPGraph(self)

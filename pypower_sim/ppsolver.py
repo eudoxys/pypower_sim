@@ -54,6 +54,7 @@ from pypower.runpf import runpf
 from pypower.rundcopf import rundcopf
 from pypower.runopf import runopf as runacopf
 from pypower.ppoption import ppoption
+from .runosp import runosp
 
 class PPSolver:
     """PyPOWER solver implementation"""
