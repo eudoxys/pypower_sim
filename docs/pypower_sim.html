@@ -125,32 +125,32 @@ shown below in Figure 1.</p>
 
 <pre class="mermaid-pre"><div class="mermaid">flowchart LR
 
-    PPCLI[&lt;a href="pypower_sim/ppcli.html"&gt;PPCLI&lt;/a&gt;] --&gt; pypower_sim
+    PPCLI[&lt;a href="pypower_sim/ppcli.html" target="_blank"&gt;PPCLI&lt;/a&gt;] --&gt; pypower_sim
 
-    case(case) --&gt; PPModel[&lt;a href="pypower_sim/ppmodel.html"&gt;PPModel&lt;/a&gt;]
-    inputs(csv) --&gt; input[&lt;a href="pypower_sim/ppdata.html"&gt;PPData&lt;/a&gt;]
+    case[\&lt;a href="https://rwl.github.io/PYPOWER/api/pypower.caseformat-module.html" target="_blank"&gt;case&lt;/a&gt;\] --&gt; PPModel[&lt;a href="pypower_sim/ppmodel.html" target="_blank"&gt;PPModel&lt;/a&gt;]
+    inputs[\csv\] --&gt; input[&lt;a href="pypower_sim/ppdata.html" target="_blank"&gt;PPData&lt;/a&gt;]
 
     subgraph pypower_sim
-        input --&gt; PPSolver[&lt;a href="pypower_sim/ppsolver.html"&gt;PPSolver&lt;/a&gt;]
+        input --&gt; PPSolver[&lt;a href="pypower_sim/ppsolver.html" target="_blank"&gt;PPSolver&lt;/a&gt;]
         PPModel &lt;--&gt; PPSolver
-        PPModel -----&gt; PPPlots[&lt;a href="pypower_sim/ppplots.html"&gt;PPPlots&lt;/a&gt;]
-        runosp &lt;--&gt; PPGraph[&lt;a href="pypower_sim/ppgraph.html"&gt;PPGraph&lt;/a&gt;]
-        PPModel -----&gt; KML[&lt;a href="pypower_sim/kml.html"&gt;KML&lt;/a&gt;]
-        PPSolver &lt;---&gt; runosp[&lt;a href="pypower_sim/runosp.html"&gt;runosp&lt;/a&gt;]
-        PPSolver ----&gt; outputs[&lt;a href="pypower_sim/ppdata.html"&gt;PPData&lt;/a&gt;]
-
+        PPModel -----&gt; PPPlots[&lt;a href="pypower_sim/ppplots.html" target="_blank"&gt;PPPlots&lt;/a&gt;]
+        runosp &lt;--&gt; PPGraph[&lt;a href="pypower_sim/ppgraph.html" target="_blank"&gt;PPGraph&lt;/a&gt;]
+        PPModel -----&gt; KML[&lt;a href="pypower_sim/kml.html" target="_blank"&gt;KML&lt;/a&gt;]
+        PPSolver &lt;---&gt; runosp[&lt;a href="pypower_sim/runosp.html" target="_blank"&gt;runosp&lt;/a&gt;]
+        PPSolver ----&gt; outputs[&lt;a href="pypower_sim/ppdata.html" target="_blank"&gt;PPData&lt;/a&gt;]
     end
 
+    runosp &lt;---&gt; cvxpy[&lt;a href="https://www.cvxpy.org/" target="_blank"&gt;cvxpy&lt;/a&gt;]
     subgraph pypower
-        runpf
-        runopf
+        runpf[&lt;a href="https://rwl.github.io/PYPOWER/api/pypower.runpf-module.html" target="_blank"&gt;runpf&lt;/a&gt;]
+        runopf[&lt;a href="https://rwl.github.io/PYPOWER/api/pypower.runopf-module.html" target="_blank"&gt;runopf&lt;/a&gt;]
     end
 
     PPSolver &lt;-----&gt; pypower
 
-    outputs --&gt; data(csv)
-    PPPlots --&gt; images(png)
-    KML --&gt; kml
+    outputs --&gt; data[/csv/]
+    PPPlots --&gt; images[/png/]
+    KML --&gt; kml[/kml/]
 </div></pre>
 
 <p>Figure 1: <code><a href="">pypower_sim</a></code> package architecture</p>
@@ -296,32 +296,32 @@ solver.run_timeseries(
 </span><span id="L-9"><a href="#L-9"><span class="linenos">  9</span></a><span class="sd">```mermaid</span>
 </span><span id="L-10"><a href="#L-10"><span class="linenos"> 10</span></a><span class="sd">flowchart LR</span>
 </span><span id="L-11"><a href="#L-11"><span class="linenos"> 11</span></a>
-</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="sd">    PPCLI[&lt;a href=&quot;pypower_sim/ppcli.html&quot;&gt;PPCLI&lt;/a&gt;] --&gt; pypower_sim</span>
+</span><span id="L-12"><a href="#L-12"><span class="linenos"> 12</span></a><span class="sd">    PPCLI[&lt;a href=&quot;pypower_sim/ppcli.html&quot; target=&quot;_blank&quot;&gt;PPCLI&lt;/a&gt;] --&gt; pypower_sim</span>
 </span><span id="L-13"><a href="#L-13"><span class="linenos"> 13</span></a><span class="sd">    </span>
-</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="sd">    case(case) --&gt; PPModel[&lt;a href=&quot;pypower_sim/ppmodel.html&quot;&gt;PPModel&lt;/a&gt;]</span>
-</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="sd">    inputs(csv) --&gt; input[&lt;a href=&quot;pypower_sim/ppdata.html&quot;&gt;PPData&lt;/a&gt;]</span>
+</span><span id="L-14"><a href="#L-14"><span class="linenos"> 14</span></a><span class="sd">    case[\\&lt;a href=&quot;https://rwl.github.io/PYPOWER/api/pypower.caseformat-module.html&quot; target=&quot;_blank&quot;&gt;case&lt;/a&gt;\\] --&gt; PPModel[&lt;a href=&quot;pypower_sim/ppmodel.html&quot; target=&quot;_blank&quot;&gt;PPModel&lt;/a&gt;]</span>
+</span><span id="L-15"><a href="#L-15"><span class="linenos"> 15</span></a><span class="sd">    inputs[\\csv\\] --&gt; input[&lt;a href=&quot;pypower_sim/ppdata.html&quot; target=&quot;_blank&quot;&gt;PPData&lt;/a&gt;]</span>
 </span><span id="L-16"><a href="#L-16"><span class="linenos"> 16</span></a>
 </span><span id="L-17"><a href="#L-17"><span class="linenos"> 17</span></a><span class="sd">    subgraph pypower_sim</span>
-</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a><span class="sd">        input --&gt; PPSolver[&lt;a href=&quot;pypower_sim/ppsolver.html&quot;&gt;PPSolver&lt;/a&gt;]</span>
+</span><span id="L-18"><a href="#L-18"><span class="linenos"> 18</span></a><span class="sd">        input --&gt; PPSolver[&lt;a href=&quot;pypower_sim/ppsolver.html&quot; target=&quot;_blank&quot;&gt;PPSolver&lt;/a&gt;]</span>
 </span><span id="L-19"><a href="#L-19"><span class="linenos"> 19</span></a><span class="sd">        PPModel &lt;--&gt; PPSolver</span>
-</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="sd">        PPModel -----&gt; PPPlots[&lt;a href=&quot;pypower_sim/ppplots.html&quot;&gt;PPPlots&lt;/a&gt;]</span>
-</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="sd">        runosp &lt;--&gt; PPGraph[&lt;a href=&quot;pypower_sim/ppgraph.html&quot;&gt;PPGraph&lt;/a&gt;]</span>
-</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="sd">        PPModel -----&gt; KML[&lt;a href=&quot;pypower_sim/kml.html&quot;&gt;KML&lt;/a&gt;]</span>
-</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a><span class="sd">        PPSolver &lt;---&gt; runosp[&lt;a href=&quot;pypower_sim/runosp.html&quot;&gt;runosp&lt;/a&gt;]</span>
-</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="sd">        PPSolver ----&gt; outputs[&lt;a href=&quot;pypower_sim/ppdata.html&quot;&gt;PPData&lt;/a&gt;]</span>
-</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a>
-</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a><span class="sd">    end</span>
-</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a>
+</span><span id="L-20"><a href="#L-20"><span class="linenos"> 20</span></a><span class="sd">        PPModel -----&gt; PPPlots[&lt;a href=&quot;pypower_sim/ppplots.html&quot; target=&quot;_blank&quot;&gt;PPPlots&lt;/a&gt;]</span>
+</span><span id="L-21"><a href="#L-21"><span class="linenos"> 21</span></a><span class="sd">        runosp &lt;--&gt; PPGraph[&lt;a href=&quot;pypower_sim/ppgraph.html&quot; target=&quot;_blank&quot;&gt;PPGraph&lt;/a&gt;]</span>
+</span><span id="L-22"><a href="#L-22"><span class="linenos"> 22</span></a><span class="sd">        PPModel -----&gt; KML[&lt;a href=&quot;pypower_sim/kml.html&quot; target=&quot;_blank&quot;&gt;KML&lt;/a&gt;]</span>
+</span><span id="L-23"><a href="#L-23"><span class="linenos"> 23</span></a><span class="sd">        PPSolver &lt;---&gt; runosp[&lt;a href=&quot;pypower_sim/runosp.html&quot; target=&quot;_blank&quot;&gt;runosp&lt;/a&gt;]</span>
+</span><span id="L-24"><a href="#L-24"><span class="linenos"> 24</span></a><span class="sd">        PPSolver ----&gt; outputs[&lt;a href=&quot;pypower_sim/ppdata.html&quot; target=&quot;_blank&quot;&gt;PPData&lt;/a&gt;]</span>
+</span><span id="L-25"><a href="#L-25"><span class="linenos"> 25</span></a><span class="sd">    end</span>
+</span><span id="L-26"><a href="#L-26"><span class="linenos"> 26</span></a>
+</span><span id="L-27"><a href="#L-27"><span class="linenos"> 27</span></a><span class="sd">    runosp &lt;---&gt; cvxpy[&lt;a href=&quot;https://www.cvxpy.org/&quot; target=&quot;_blank&quot;&gt;cvxpy&lt;/a&gt;]</span>
 </span><span id="L-28"><a href="#L-28"><span class="linenos"> 28</span></a><span class="sd">    subgraph pypower</span>
-</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a><span class="sd">        runpf</span>
-</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a><span class="sd">        runopf</span>
+</span><span id="L-29"><a href="#L-29"><span class="linenos"> 29</span></a><span class="sd">        runpf[&lt;a href=&quot;https://rwl.github.io/PYPOWER/api/pypower.runpf-module.html&quot; target=&quot;_blank&quot;&gt;runpf&lt;/a&gt;]</span>
+</span><span id="L-30"><a href="#L-30"><span class="linenos"> 30</span></a><span class="sd">        runopf[&lt;a href=&quot;https://rwl.github.io/PYPOWER/api/pypower.runopf-module.html&quot; target=&quot;_blank&quot;&gt;runopf&lt;/a&gt;]</span>
 </span><span id="L-31"><a href="#L-31"><span class="linenos"> 31</span></a><span class="sd">    end</span>
 </span><span id="L-32"><a href="#L-32"><span class="linenos"> 32</span></a>
 </span><span id="L-33"><a href="#L-33"><span class="linenos"> 33</span></a><span class="sd">    PPSolver &lt;-----&gt; pypower</span>
 </span><span id="L-34"><a href="#L-34"><span class="linenos"> 34</span></a><span class="sd">    </span>
-</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="sd">    outputs --&gt; data(csv)</span>
-</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a><span class="sd">    PPPlots --&gt; images(png)</span>
-</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a><span class="sd">    KML --&gt; kml</span>
+</span><span id="L-35"><a href="#L-35"><span class="linenos"> 35</span></a><span class="sd">    outputs --&gt; data[/csv/]</span>
+</span><span id="L-36"><a href="#L-36"><span class="linenos"> 36</span></a><span class="sd">    PPPlots --&gt; images[/png/]</span>
+</span><span id="L-37"><a href="#L-37"><span class="linenos"> 37</span></a><span class="sd">    KML --&gt; kml[/kml/]</span>
 </span><span id="L-38"><a href="#L-38"><span class="linenos"> 38</span></a><span class="sd">```</span>
 </span><span id="L-39"><a href="#L-39"><span class="linenos"> 39</span></a><span class="sd">Figure 1: `pypower_sim` package architecture</span>
 </span><span id="L-40"><a href="#L-40"><span class="linenos"> 40</span></a>

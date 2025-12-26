@@ -9,32 +9,32 @@ shown below in Figure 1.
 ```mermaid
 flowchart LR
 
-    PPCLI[<a href="pypower_sim/ppcli.html">PPCLI</a>] --> pypower_sim
+    PPCLI[<a href="pypower_sim/ppcli.html" target="_blank">PPCLI</a>] --> pypower_sim
     
-    case(case) --> PPModel[<a href="pypower_sim/ppmodel.html">PPModel</a>]
-    inputs(csv) --> input[<a href="pypower_sim/ppdata.html">PPData</a>]
+    case[\\<a href="https://rwl.github.io/PYPOWER/api/pypower.caseformat-module.html" target="_blank">case</a>\\] --> PPModel[<a href="pypower_sim/ppmodel.html" target="_blank">PPModel</a>]
+    inputs[\\csv\\] --> input[<a href="pypower_sim/ppdata.html" target="_blank">PPData</a>]
 
     subgraph pypower_sim
-        input --> PPSolver[<a href="pypower_sim/ppsolver.html">PPSolver</a>]
+        input --> PPSolver[<a href="pypower_sim/ppsolver.html" target="_blank">PPSolver</a>]
         PPModel <--> PPSolver
-        PPModel -----> PPPlots[<a href="pypower_sim/ppplots.html">PPPlots</a>]
-        runosp <--> PPGraph[<a href="pypower_sim/ppgraph.html">PPGraph</a>]
-        PPModel -----> KML[<a href="pypower_sim/kml.html">KML</a>]
-        PPSolver <---> runosp[<a href="pypower_sim/runosp.html">runosp</a>]
-        PPSolver ----> outputs[<a href="pypower_sim/ppdata.html">PPData</a>]
-
+        PPModel -----> PPPlots[<a href="pypower_sim/ppplots.html" target="_blank">PPPlots</a>]
+        runosp <--> PPGraph[<a href="pypower_sim/ppgraph.html" target="_blank">PPGraph</a>]
+        PPModel -----> KML[<a href="pypower_sim/kml.html" target="_blank">KML</a>]
+        PPSolver <---> runosp[<a href="pypower_sim/runosp.html" target="_blank">runosp</a>]
+        PPSolver ----> outputs[<a href="pypower_sim/ppdata.html" target="_blank">PPData</a>]
     end
 
+    runosp <---> cvxpy[<a href="https://www.cvxpy.org/" target="_blank">cvxpy</a>]
     subgraph pypower
-        runpf
-        runopf
+        runpf[<a href="https://rwl.github.io/PYPOWER/api/pypower.runpf-module.html" target="_blank">runpf</a>]
+        runopf[<a href="https://rwl.github.io/PYPOWER/api/pypower.runopf-module.html" target="_blank">runopf</a>]
     end
 
     PPSolver <-----> pypower
     
-    outputs --> data(csv)
-    PPPlots --> images(png)
-    KML --> kml
+    outputs --> data[/csv/]
+    PPPlots --> images[/png/]
+    KML --> kml[/kml/]
 ```
 Figure 1: `pypower_sim` package architecture
 
