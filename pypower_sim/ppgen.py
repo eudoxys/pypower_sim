@@ -40,8 +40,8 @@ import warnings
 import pandas as pd
 import numpy as np
 from geohash import nearest2
-from .ppmodel import idx_gis, idx_bus, PPModel
-from .kml import KML
+from pypower_sim.ppmodel import idx_gis, idx_bus, PPModel
+from pypower_sim.kml import KML
 
 GENDATA = ['state', 'county', 'node', 'bus', 'fuel', 'gen', 'operating_capacity',
        'index', 'variable_cost', 'fixed_cost']

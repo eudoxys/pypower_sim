@@ -163,6 +163,8 @@ from typing import TypeVar
 from copy import deepcopy
 
 from numpy import array
+import numpy as np
+import scipy as sp
 import cvxpy as cp
 
 def runosp(
@@ -200,16 +202,74 @@ def runosp(
     """
 
     # get graph analysis data
-    graph = model._graph()
-    print(graph.laplacian(weighted=True,complex_flows=True).todense())
-    
-    result = deepcopy(model.case)
+    bus = model.get_data("bus")
+    branch = model.get_data("branch")
+    gen = model.get_data("gen")
+    gencost = model.get_data("gencost")
+    construction = model.get_data("construction")
 
+    # TODO: support adjustments to these
+    margin = 0.2
+    ref = 0
+    voltage_limit = 0.05
+    reactive_power_constraint = 0.02
+    generator_expansion_limit = sp.sparse.coo_array((gen["PMAX"].values,(gen["GEN_BUS"].values,[1]*len(gen)))).T
+
+    graph = model._graph()
+    
+    G = graph.laplacian(weighted=True,complex_flows=True).todense() # weighted graph Laplacian
+    D = array([complex(*z) for z in bus[["PD","QD"]].values]) # demand
+    I = graph.incidence(weighted=True,complex_flows=True).todense() # network incidence matrix
+    F = array(branch["RATE_A"].values) # line ratings
+    i,j = gen["GEN_BUS"].values,array([0]*len(gen)) # generator bus index
+    v = array([complex(x,y) for x,y in gen[["PMAX","QMAX"]].values]) # generator capacities
+    S = sp.sparse.coo_array((v,(i,j))).todense() # generators and synchronous condensers
+    C = array([complex(x,y) for x,y in bus[["GS","BS"]].values]) # static capacitors/condensers 
+    N = len(bus)
+
+    x = cp.Variable(N) # bus voltage angles
+    y = cp.Variable(N) # bus voltage magnitudes
+    g = cp.Variable(N) # generation real power dispatch
+    h = cp.Variable(N) # generation/synchronous condenser reactive power dispatch
+    c = cp.Variable(N) # capacitor/condenser settings
+    
+    puS = model.case["baseMVA"]
+    i,j = construction["BUS_I"].values,[0]*len(construction)
+    gen_cost = sp.sparse.coo_array((construction["GENERATOR"].values.astype(complex),(i,j))).todense()
+    con_cost = sp.sparse.coo_array((construction["CONDENSER"].values,(i,j))).todense()
+    rea_cost = sp.sparse.coo_array((construction["REACTOR"].values,(i,j))).todense()
+    cap_cost = sp.sparse.coo_array((construction["CAPACITOR"].values,(i,j))).todense()
+
+    print(np.hstack([gen_cost,con_cost,rea_cost,cap_cost]),sep="\n")
+    costs = cp.abs(gen_cost.T) @ cp.abs(g) + cp.abs(gen_cost.imag.T) @ cp.abs(h) + (cap_cost+con_cost).T/2 @ cp.abs(c) + (cap_cost-con_cost).T/2 @ c
+
+    objective = cp.Minimize(costs)  # minimum cost (generation + demand response)
+    constraints = [
+        g - G.real @ x + c - D.real*(1+margin) == 0,  # KCL/KVL real power laws
+        # h - G.imag @ y - c - D.imag*(1+margin) == 0,  # KCL/KVL reactive power laws
+        x[ref] == 0,  # swing bus voltage angle always 0
+        y[ref] == 1,  # swing bus voltage magnitude is always 1
+        # cp.abs(y - 1) <= voltage_limit,  # limit voltage magnitude to 5% deviation
+        # cp.abs(I.T @ x) <= F,  # line flow limits
+        # g >= 0, # generation must be positive
+        # cp.abs(h) <= reactive_power_constraint*g # limit how much reactive power a generator can produce
+        ]
+    if not generator_expansion_limit is None:
+        # limit where and how much generation can be added
+        constraints.append(cp.abs(g+h*1j) <= generator_expansion_limit*cp.abs(S))
+
+    problem = cp.Problem(objective, constraints)
+    problem.solve(verbose=False)
+    result = {
+      # "problem": problem.get_problem_data(solver=problem.solver_stats.solver_name),
+      "cost": problem.value,
+      "status": problem.status,
+      }
     # setup problem
 
     # contruct result
-    result["reason"] = "Not implemented yet"
-    result["success"] = 0
+    # result["success"] = 0
+    # result["reason"] = "Not implemented yet"
     return result
 
 if __name__ == "__main__":
@@ -222,19 +282,29 @@ if __name__ == "__main__":
             [0, 3, 50,  30.99,  0, 0, 1, 1, 0, 230, 1, 1.1, 0.9],
             [1, 1, 170, 105.35, 0, 0, 1, 1, 0, 230, 1, 1.1, 0.9],
             [2, 1, 200, 123.94, 0, 0, 1, 1, 0, 230, 1, 1.1, 0.9],
-            [3, 2, 80,  49.58,  0, 0, 1, 1, 0, 230, 1, 1.1, 0.9]
+            [3, 2, 80,  49.58,  0, 0, 1, 1, 0, 230, 1, 1.1, 0.9],
             ]),
         "gen": array([
+            [0, 0,   0, 100, -100, 1,    100, 1, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
             [3, 318, 0, 100, -100, 1.02, 100, 1, 318, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0],
-            [0, 0,   0, 100, -100, 1,    100, 1, 0,   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
         ]),
         "branch": array([
             [0, 1, 0.01008, 0.0504, 0.1025, 250, 250, 250, 0, 0, 1, -360, 360],
             [0, 2, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 1, -360, 360],
             [1, 2, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 0, -360, 360],
             [1, 3, 0.00744, 0.0372, 0.0775, 250, 250, 250, 0, 0, 1, -360, 360],
-            [2, 3, 0.01272, 0.0636, 0.1275, 250, 250, 250, 0, 0, 1, -360, 360]
+            [2, 3, 0.01272, 0.0636, 0.1275, 250, 250, 250, 0, 0, 1, -360, 360],
             ]),
+        "gencost": array([
+            [2, 0.0, 0.0, 3, 0.04,20.0,0.0],
+            [2, 0.0, 0.0, 3, 0.25,20.0,0.0],
+          ]),
+        "construction": array([ # construction costs ($/MW)
+          # bus_i,generator,condenser,reactor,capacitor
+          [1,0,0,0,1e4],
+          [2,0,0,0,1e4],
+          [3,1e6,1e5,0,0],
+          ])
         }
 
-    runosp(PPModel(case=wheatstone))
+    print(runosp(PPModel(case=wheatstone)))

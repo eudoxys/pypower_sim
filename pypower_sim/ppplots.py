@@ -18,7 +18,7 @@ plots:
 
 from typing import TypeVar
 import matplotlib.pyplot as plt
-from .ppmodel import PPModel
+from pypower_sim.ppmodel import PPModel
 
 class PPPlots:
     """`pypower_sim` plotting class implementation"""

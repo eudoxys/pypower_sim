@@ -69,16 +69,17 @@ from pypower import idx_brch as idx_branch
 from pypower import idx_gen, idx_bus # used indirectly in get_header()
 # pylint: enable=unused-import
 from pypower import idx_cost as idx_gencost
-from .ppgis import idx_gis
-from .ppgraph import PPGraph
 
-from .ppjson import PypowerModelEncoder, PypowerModelDecoder
-from .kml import KML
+from pypower_sim.ppgis import idx_gis
+from pypower_sim.ppgraph import PPGraph
+
+from pypower_sim.ppjson import PypowerModelEncoder, PypowerModelDecoder
+from pypower_sim.kml import KML
 
 idx_dclinecost = idx_gencost
 
 class idx_dcline:
-    """@private Provide missing column index values that should be in pypower.idx_dcline"""
+    """@private Provide missing column index values that should be in `pypower.idx_dcline`"""
 
     # pylint: disable=invalid-name,too-few-public-methods
 
@@ -106,6 +107,15 @@ class idx_dcline:
     MU_QMINT = 21
     MU_QMAXT = 22
 
+class idx_construction:
+    """@private Provide column index values for construction costs"""
+
+    BUS_I = 0
+    GENERATOR = 1
+    CONDENSER = 2
+    REACTOR = 3
+    CAPACITOR = 4
+
 class PPModel:
     """`pypower_sim` model access class implementation"""
 
@@ -117,6 +127,7 @@ class PPModel:
         "dcline": [],
         "dclinecost": ["PW_LINEAR","POLYNOMIAL"],
         "gis": [],
+        "construction": [],
     }
     """`idx_*` values that are excluded from the line of header indexes"""
 
@@ -153,9 +164,33 @@ class PPModel:
             "BUS_I": int,
             "GEOHASH": str,
             "NAME": str,
+        },
+        "construction":{
+            "BUS_I": int,
         }
     }
     """Table of `idx_*` indexes that refer to values having non-float types"""
+
+    default_options = {
+        
+        # general options
+        "VERBOSE": 0, 
+        "OUT_ALL": 0,
+        "OUT_ALL_LIM": -1,
+        "OUT_V_LIM": 1,
+
+        # powerflow options
+        "PF_ALG": 1,
+        "PF_DC": False,
+        "PF_LIN_SOLVER_NR": "",
+
+        # continuation powerflow options
+        "CPF_PARAMETERIZATION": 3,
+        "CPF_STOP_AT": "NOSE",
+        "CPF-STEP": 0.05,
+        "CPF_ADAPT_STEP": False,
+        "CPF_ERROR_TOL": 1e-3,
+    }
 
     # pylint: disable=too-many-public-methods
 
@@ -211,7 +246,7 @@ class PPModel:
         self.recorders = {}
         """Time series non-mapped data outputs (see `pypower_sim.ppdata.PPData.set_recorder)"""
 
-        self.options = {"VERBOSE":0, "OUT_ALL":0}
+        self.options = dict(self.default_options)
         """Solver options"""
 
         self.errors = []

@@ -25,7 +25,7 @@ PyPOWER Simulation CLI
 import argparse
 import importlib
 
-from .ppmodel import PPModel
+from pypower_sim.ppmodel import PPModel
 
 class PPCLI(argparse.ArgumentParser):
     """Main CLI implementation"""
