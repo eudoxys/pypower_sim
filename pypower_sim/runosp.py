@@ -246,13 +246,13 @@ def runosp(
     objective = cp.Minimize(costs)  # minimum cost (generation + demand response)
     constraints = [
         g - G.real @ x + c - D.real*(1+margin) == 0,  # KCL/KVL real power laws
-        # h - G.imag @ y - c - D.imag*(1+margin) == 0,  # KCL/KVL reactive power laws
+        h - G.imag @ y - c - D.imag*(1+margin) == 0,  # KCL/KVL reactive power laws
         x[ref] == 0,  # swing bus voltage angle always 0
         y[ref] == 1,  # swing bus voltage magnitude is always 1
-        # cp.abs(y - 1) <= voltage_limit,  # limit voltage magnitude to 5% deviation
-        # cp.abs(I.T @ x) <= F,  # line flow limits
-        # g >= 0, # generation must be positive
-        # cp.abs(h) <= reactive_power_constraint*g # limit how much reactive power a generator can produce
+        cp.abs(y - 1) <= voltage_limit,  # limit voltage magnitude to 5% deviation
+        cp.abs(I.T @ x) <= F,  # line flow limits
+        g >= 0, # generation must be positive
+        cp.abs(h) <= reactive_power_constraint*g # limit how much reactive power a generator can produce
         ]
     if not generator_expansion_limit is None:
         # limit where and how much generation can be added
