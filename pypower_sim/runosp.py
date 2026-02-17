@@ -214,47 +214,62 @@ def runosp(
     voltage_limit = 0.05
     reactive_power_constraint = 0.02
     generator_expansion_limit = sp.sparse.coo_array((gen["PMAX"].values,(gen["GEN_BUS"].values,[1]*len(gen)))).T
+    min_power_ratio = np.full(len(bus),0.2)
 
     graph = model._graph()
     
-    G = graph.laplacian(weighted=True,complex_flows=True).todense() # weighted graph Laplacian
-    D = array([complex(*z) for z in bus[["PD","QD"]].values]) # demand
-    I = graph.incidence(weighted=True,complex_flows=True).todense() # network incidence matrix
-    F = array(branch["RATE_A"].values) # line ratings
-    i,j = gen["GEN_BUS"].values,array([0]*len(gen)) # generator bus index
-    v = array([complex(x,y) for x,y in gen[["PMAX","QMAX"]].values]) # generator capacities
-    S = sp.sparse.coo_array((v,(i,j))).todense() # generators and synchronous condensers
-    C = array([complex(x,y) for x,y in bus[["GS","BS"]].values]) # static capacitors/condensers 
     N = len(bus)
+    G = graph.laplacian(weighted=True,complex_flows=True).todense() # weighted graph Laplacian
+    D = array([complex(*z) for z in bus[["PD","QD"]].values],ndmin=1) # demand
+    I = graph.incidence(weighted=True,complex_flows=True).todense().T # network incidence matrix
+    F = array(branch["RATE_A"].values,ndmin=1) # line ratings
+    i,j = gen["GEN_BUS"].values,array([0]*len(gen)) # generator bus index
+    v = array([complex(x,y) for x,y in gen[["PMAX","QMAX"]].values],ndmin=1) # generator capacities
+    S = sp.sparse.coo_array((v,(i,j))).todense() # generators and synchronous condensers
+    M = np.absolute(S) # current capacity
+    C = np.clip(bus["BS"].values,a_min=0,a_max=None) # static capacitors (positive BS)
+    R = np.clip(bus["BS"].values,a_min=None,a_max=0) # static condensers (negative BS)
+    H = (M==0).astype(int) # flag busses where no capacity upgrade is possible
+    U = 3*np.sum(np.absolute(D)) # upper bound
 
-    x = cp.Variable(N) # bus voltage angles
-    y = cp.Variable(N) # bus voltage magnitudes
-    g = cp.Variable(N) # generation real power dispatch
-    h = cp.Variable(N) # generation/synchronous condenser reactive power dispatch
-    c = cp.Variable(N) # capacitor/condenser settings
+    x = cp.Variable(N,name='x') # bus voltage angles
+    y = cp.Variable(N,name='y') # bus voltage magnitudes
+    g = cp.Variable(N,name='g') # generation real power dispatch
+    h = cp.Variable(N,name='h') # generation/synchronous condenser reactive power dispatch
+    c = cp.Variable(N,name='c') # capacitor/condenser settings
+    m = cp.Variable(N,name='m')
     
     puS = model.case["baseMVA"]
+    s = cp.abs(g+h*1j) # apparent power at each bus
     i,j = construction["BUS_I"].values,[0]*len(construction)
-    gen_cost = sp.sparse.coo_array((construction["GENERATOR"].values.astype(complex),(i,j))).todense()
-    con_cost = sp.sparse.coo_array((construction["CONDENSER"].values,(i,j))).todense()
-    rea_cost = sp.sparse.coo_array((construction["REACTOR"].values,(i,j))).todense()
-    cap_cost = sp.sparse.coo_array((construction["CAPACITOR"].values,(i,j))).todense()
+    gen_cost = sp.sparse.coo_array((construction["GENERATOR"].values.astype(complex),(i,j))).todense().T[0]
+    con_cost = sp.sparse.coo_array((construction["CONDENSER"].values,(i,j))).todense().T[0]
+    rea_cost = sp.sparse.coo_array((construction["REACTOR"].values,(i,j))).todense().T[0]
+    cap_cost = sp.sparse.coo_array((construction["CAPACITOR"].values,(i,j))).todense().T[0]
 
-    print(np.hstack([gen_cost,con_cost,rea_cost,cap_cost]),sep="\n")
-    costs = cp.abs(gen_cost.T) @ cp.abs(g) + cp.abs(gen_cost.imag.T) @ cp.abs(h) + (cap_cost+con_cost).T/2 @ cp.abs(c) + (cap_cost-con_cost).T/2 @ c
+    costs = \
+        cp.abs(gen_cost) @ cp.abs(g) \
+      + cp.abs(gen_cost.imag) @ cp.abs(h) \
+      + (cap_cost+con_cost)/2 @ cp.abs(c) \
+      + (cap_cost-con_cost)/2 @ c
+
+    constraints = [
+        G.real @ x - g - S.real + c + C + R + D.real*(1+margin) == 0,  # KCL/KVL real power laws
+        G.imag @ y - h - S.imag - c - C - R + D.imag*(1+margin) == 0,  # KCL/KVL reactive power laws
+        x[ref-1] == 0,  # swing bus voltage angle always 0
+        y[ref-1] == 1,  # swing bus voltage magnitude is always 1
+        cp.abs(y - 1) <= voltage_limit,  # limit voltage magnitude to 5% deviation
+        cp.abs(I.real@x + I.imag@y) <= F, 
+        g >= 0, # generation must be positive
+        cp.abs(h) <= reactive_power_constraint*g, # limit how much reactive power a generator can produce
+        s <= U*m, # limit apparent power to upper bounds
+        m >= 0, 
+        m <= 1
+        ]
 
     objective = cp.Minimize(costs)  # minimum cost (generation + demand response)
-    constraints = [
-        g - G.real @ x + c - D.real*(1+margin) == 0,  # KCL/KVL real power laws
-        h - G.imag @ y - c - D.imag*(1+margin) == 0,  # KCL/KVL reactive power laws
-        x[ref] == 0,  # swing bus voltage angle always 0
-        y[ref] == 1,  # swing bus voltage magnitude is always 1
-        cp.abs(y - 1) <= voltage_limit,  # limit voltage magnitude to 5% deviation
-        cp.abs(I.T @ x) <= F,  # line flow limits
-        g >= 0, # generation must be positive
-        cp.abs(h) <= reactive_power_constraint*g # limit how much reactive power a generator can produce
-        ]
-    if not generator_expansion_limit is None:
+
+    if not generator_expansion_limit is None: #TODO: #change this to if generator_expansion_limit
         # limit where and how much generation can be added
         constraints.append(cp.abs(g+h*1j) <= generator_expansion_limit*cp.abs(S))
 
