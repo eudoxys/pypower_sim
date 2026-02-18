@@ -275,16 +275,12 @@ def runosp(
 
     problem = cp.Problem(objective, constraints)
     problem.solve(verbose=False)
-    result = {
-      # "problem": problem.get_problem_data(solver=problem.solver_stats.solver_name),
-      "cost": problem.value,
-      "status": problem.status,
-      }
-    # setup problem
 
-    # contruct result
-    # result["success"] = 0
-    # result["reason"] = "Not implemented yet"
+    result = {
+      "value": problem.value,
+      "status": problem.status,
+      "problem": problem, #.get_problem_data(solver=problem.solver_stats.solver_name),
+      }
     return result
 
 if __name__ == "__main__":
