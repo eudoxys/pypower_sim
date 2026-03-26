@@ -222,7 +222,7 @@ class PPGraph:
         counts = Counter([self.bus_i[x] for x in self.branch[["F_BUS","T_BUS"]].values.flatten()])
 
         # create diagonal matrix from counts
-        self.D = sp.diags([counts[x] for x in range(self.N)])
+        self.D = sp.diags([float(counts[x]) for x in range(self.N)])
 
         return self.D.tocsr()
 
@@ -336,6 +336,9 @@ class PPGraph:
         elif not weighted and not self.B is None:
             return self.B
 
+        if self.M == 0:
+            return sp.csr_matrix((self.N,self.M),
+                dtype=np.complex64 if weighted else np.float64)
         fbus,tbus = zip(*self.branch_ij)
 
         if weighted:
@@ -343,13 +346,13 @@ class PPGraph:
             Z = np.array([(1/x if np.abs(x)!=0 else 0) for x in self.impedance()])
             if not complex_flows:
                 Z = Z.real
-            self.W = (sp.csr_matrix((Z,[range(self.M),fbus]),shape=(self.M,self.N)) -\
-                sp.csr_matrix((Z,[range(self.M),tbus]),shape=(self.M,self.N))).T
+            self.W = (sp.csr_matrix((Z,[range(self.M),tbus]),shape=(self.M,self.N)) -\
+                      sp.csr_matrix((Z,[range(self.M),fbus]),shape=(self.M,self.N))).T
             return self.W
 
         Z = np.ones(self.M)
-        self.B = (sp.csr_matrix((Z,[range(self.M),fbus]),shape=(self.M,self.N)) -\
-            sp.csr_matrix((Z,[range(self.M),tbus]),shape=(self.M,self.N))).T
+        self.B = (sp.csr_matrix((Z,[range(self.M),tbus]),shape=(self.M,self.N)) -\
+                  sp.csr_matrix((Z,[range(self.M),fbus]),shape=(self.M,self.N))).T
         return self.B
 
     def laplacian(self,
@@ -386,9 +389,9 @@ class PPGraph:
         if refresh:
             self.refresh()
         elif weighted and not self.G is None:
-            return self.G
+            return self.G.tocsr()
         elif not weighted and not self.L is None:
-            return self.L
+            return self.L.tocsr()
 
         if weighted:
 
@@ -498,12 +501,12 @@ if __name__ == "__main__":
 
 
     # pip install git+https://github.com/eudoxys/wecc240
-    from wecc240.wecc240_2011 import wecc240_2011 as wecc240
-    test = PPModel(case=wecc240)
+    # from wecc240.wecc240_2011 import wecc240_2011 as wecc240
+    # test = PPModel(case=wecc240)
 
-    graph = PPGraph(test)
+    # graph = PPGraph(test)
 
-    np.set_printoptions(edgeitems=3,linewidth=10000)
+    # np.set_printoptions(edgeitems=3,linewidth=10000)
 
-    S = graph.spectral()
-    print("","*** WECC 240 ***",f"{S.E=}",f"{S.U=}",f"{S.K=}",sep="\n")
+    # S = graph.spectral()
+    # print("","*** WECC 240 ***",f"{S.E=}",f"{S.U=}",f"{S.K=}",sep="\n")

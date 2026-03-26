@@ -1,9 +1,11 @@
 cvxpy
+marimo
 matplotlib
 numpy
 openpyxl
 pandas
 pytz
 scipy
+
 geohash @ git+https://github.com/eudoxys/geohash
 pypower @ git+https://github.com/eudoxys/pypower

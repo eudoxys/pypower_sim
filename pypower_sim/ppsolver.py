@@ -94,7 +94,7 @@ class PPSolver:
         return status==1
 
     def solve_opf(self,
-        use_acopf:bool=False,
+        use_acopf:bool=True,
         update:str='success',
         with_result:bool=False,
         ) -> [bool,dict]:
@@ -131,8 +131,8 @@ class PPSolver:
         return success
 
     def solve_osp(self,
-        costs:dict[str:float]|None=None,
-        options:dict[str:str|int|float]|None=None,
+        # costs:dict[str:float]|None=None,
+        options:dict[str:str|int|float|dict]|None=None,
         update:str='success',
         with_result:bool=False):
         """Solve the optimal sizing placement problem
@@ -192,7 +192,19 @@ class PPSolver:
 
         This solver is experimental and is currently being developed
         """
-        warnings.warn("solver_osp is not implemented yet")
+        # warnings.warn("solver_osp is not implemented yet")
+        result = runosp(self.model,config=options)
+        status = result["status"]
+        success = status == 1
+        if ( success and update in ["always","success"] ) \
+                or ( not success and update in ["always","failure"] ):
+            for name,values in result.items():
+                if name in self.model.case:
+                    self.model.case[name] = values
+        if with_result:
+            return status,result
+        else:
+            return status
 
     def update_inputs(self,t:dt.datetime) -> int:
         """Synchronize inputs with the current date/time
@@ -267,7 +279,7 @@ class PPSolver:
         call_on_fail:Callable=None,
         stop_on_fail:bool=True,
         stop_test:Callable=None,
-        use_acopf:bool=False,
+        use_acopf:bool=True,
         **kwargs) -> str|list[str]|None:
         """Run a timeseries simulation
 
@@ -430,15 +442,113 @@ class PPSolver:
 
 if __name__ == "__main__":
 
-    # pip install git+https://github.com/eudoxys/wecc240
-    from wecc240.wecc240_2011 import wecc240_2011 as wecc240
+    show_violations = False
+    show_totals = True
 
-    # pip install -e ..
-    from pypower_sim.ppmodel import PPModel
-    model = PPModel(case=wecc240)
+    def show_results(model):
+        violations = model.get_violations()
+        if violations or show_totals:
+            generators = complex(*model.get_data("gen")[["PG","QG"]].values.sum(axis=0))
+            loads = complex(*model.get_data("bus")[["PD","QD"]].values.sum(axis=0))
+            losses = generators - loads
+            print(f"{generators=:.1f}, {generators=:.1f}, {losses=:.1f}, violations={len(violations)}")
+            if show_violations:
+                print(*violations,sep="\n")
+        else:
+            print("OK")
 
-    solver = PPSolver(model)
+    try:
+        import wecc240
+    except ModuleNotFoundError as err:
+        import os
+        if str(err) == "No module named 'wecc240'" and os.system("pip install git+https://github.com/eudoxys/wecc240") == 0:
+            import wecc240
+        else:
+            raise
 
-    solver.solve_osp()
-    solver.solve_opf()
-    solver.solve_pf()
+    try:
+        from pypower_sim.ppmodel import PPModel
+    except ModuleNotFoundError as err:
+        import os
+        if str(err) == "No module named 'pypower_sim'" and os.system("pip install -e ..") == 0:
+            from pypower_sim.ppmodel import PPModel
+        else:
+            raise
+
+    for test in [x for x in dir(wecc240) if x.startswith("wecc240_")]:
+
+        print(f"Testing {test}...")
+        module = getattr(wecc240,test)
+        model = PPModel(case=getattr(module,test)())
+
+        solver = PPSolver(model)
+
+        for problem,method in {
+            "original model powerflow": solver.solve_pf,
+            "original model OPF": solver.solve_opf,
+            "original model OSP": solver.solve_osp,
+            "optimal model OPF": solver.solve_opf,
+            "optimal model PF": solver.solve_pf,
+            }.items():
+            print(f"Solving {problem}",end="...",flush=True)
+            if method():
+                show_results(model)
+            else:
+                print("ERROR:",method.__name__,"failed")
+                solver.model.options["VERBOSE"] = 3
+                solver.model.options["OUT_ALL"] = 1
+                method()
+                solver.model.options = solver.model.default_options
+
+        # print("Solving original model powerflow",end="...",flush=True)
+        # if solver.solve_pf():
+        #     show_results(model)
+        # else:
+        #     print("PF failed")
+
+        # print("Solving original model OPF",end="...",flush=True)
+        # if solver.solve_opf(use_acopf=True):
+        #     show_results(model)
+        # else:
+        #     print("OPF failed")
+        #     solver.model.options["VERBOSE"] = 3
+        #     solver.model.options["OUT_ALL"] = 1
+        #     solver.solve_opf(use_acopf=True)
+        #     solver.model.options = solver.model.default_options
+
+        # print("Solving original OPF model powerflow",end="...",flush=True)
+        # if solver.solve_pf():
+        #     show_results(model)
+        # else:
+        #     print("PF failed")
+        #     solver.model.options["VERBOSE"] = 3
+        #     solver.model.options["OUT_ALL"] = 1
+        #     solver.solve_pf()
+        #     solver.model.options = solver.model.default_options
+
+        # print("Solving original OSP model",end="...",flush=True)
+        # if solver.solve_osp():
+        #     show_results(model)
+        # else:
+        #     print("OSP failed")
+
+
+        # print("Solving optimal model OPF",end="...",flush=True)
+        # if solver.solve_opf(use_acopf=True):
+        #     show_results(model)
+        # else:
+        #     print("OPF failed")
+        #     solver.model.options["VERBOSE"] = 3
+        #     solver.model.options["OUT_ALL"] = 1
+        #     solver.solve_opf(use_acopf=True)
+        #     solver.model.options = solver.model.default_options
+
+        # print("Solving optimal OPF model powerflow",end="...",flush=True)
+        # if solver.solve_pf():
+        #     show_results(model)
+        # else:
+        #     print("PF failed")
+        #     solver.model.options["VERBOSE"] = 3
+        #     solver.model.options["OUT_ALL"] = 1
+        #     solver.solve_pf()
+        #     solver.model.options = solver.model.default_options

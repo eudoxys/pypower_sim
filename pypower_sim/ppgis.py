@@ -79,7 +79,7 @@ class PPGIS:
 
         # check columns
         assert columns is None or len(columns) == len(model.get_header("gis")), \
-            f"columns must be length={len(model.get_header("gis"))}"
+            f"""columns must be length={len(model.get_header("gis"))}"""
 
         valid_updates = {"GEOHASH","GEN","LOAD","MODEL"}
 
