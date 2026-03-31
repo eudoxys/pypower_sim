@@ -241,10 +241,11 @@ class PPSolver:
             bus = self.model.get_data("bus")
             gen = self.model.get_data("gen")
             gencost = self.model.get_data("gencost")
+            pqbus_ndx = bus[bus.BUS_TYPE == idx_bus.PQ].index.values.astype(int)
 
             # add new generators to gen busses
             if sum(result["generators"]) > 0:
-                gen_bus, pmax = np.array([(int(x),y) for x,y in enumerate(result["generators"]) if round(y,3) > 0]).T
+                gen_bus, pmax = np.array([(int(x),y) for x,y in enumerate(result["generators"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]).T
                 if "roundup" in generators:
                     pmax = np.ceil(pmax*10**generators["roundup"])/10**generators["roundup"]
                 newgen = {
@@ -257,11 +258,10 @@ class PPSolver:
             else:
                 newgen = {x:[] for x in gen.columns}
                 newgencost = {x:[] for x in gencost.columns}
-            # TODO: remove PQ bus entries
 
             # add active capacitors to gen busses
             if sum(result["capacitors"]) > 0:
-                cap_bus, qmax = np.array([(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0]).T
+                cap_bus, qmax = np.array([(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]).T
                 if "roundup" in capacitors:
                     qmax = np.ceil(qmax*10**capacitors["roundup"])/10**capacitors["roundup"]
                 newcap = {
@@ -274,11 +274,10 @@ class PPSolver:
             else:
                 newcap = {x:[] for x in gen.columns}
                 newcapcost = {x:[] for x in gencost.columns}
-            # TODO: remove PQ bus entries
 
             # add active condensers to gen busses
             if sum(result["condensers"]) > 0:
-                con_bus, qmin = np.array([(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0]).T
+                con_bus, qmin = np.array([(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]).T
                 if "roundup" in condensers:
                     qmin = np.ceil(qmin*10**condensers["roundup"])/10**condensers["roundup"]
                 newcon = {
@@ -291,13 +290,6 @@ class PPSolver:
             else:
                 newcon = {x:[] for x in gen.columns}
                 newconcost = {x:[] for x in gencost.columns}
-            # TODO: remove PQ bus entries
-
-            # add passive capacitors to PQ busses
-            # TODO
-
-            # add passive condensers to PQ busses
-            # TODO
 
             # compile new gen array
             gen = pd.concat([gen,
@@ -319,6 +311,28 @@ class PPSolver:
                     pd.DataFrame(newconcost),
                     ]).fillna(0).reset_index(drop=True)
                 self.model.case["gencost"] = gencost.values
+
+            # add passive capacitors to PQ busses
+            if sum(result["capacitors"]) > 0:
+                cap_bus, qmax = np.array([(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) in pqbus_ndx]).T
+                if "roundup" in capacitors:
+                    bs = np.ceil(qmax*10**capacitors["roundup"])/10**capacitors["roundup"]
+                newcap = {
+                    "BUS": self.model._bus_i(bus.iloc[cap_bus].BUS_I.values.tolist()),
+                    "BS":bs,
+                    }
+                self.model.case["bus"][newcap["BUS"],idx_bus.BS] += newcap["BS"]
+
+            # add passive condensers to PQ busses
+            if sum(result["condensers"]) > 0:
+                con_bus, qmin = np.array([(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) in pqbus_ndx]).T
+                if "roundup" in condensers:
+                    bs = -np.ceil(qmin*10**condensers["roundup"])/10**condensers["roundup"]
+                newcon = {
+                    "BUS":self.model._bus_i(bus.iloc[con_bus].BUS_I.values.tolist()),
+                    "BS": bs,
+                    }
+                self.model.case["bus"][newcap["BUS"],idx_bus.BS] += newcap["BS"]
 
         if with_result:
             return status,result
