@@ -114,6 +114,7 @@ then we have the following graph analysis results.
 """
 # pylint: enable=line-too-long
 
+import warnings
 from collections import Counter, namedtuple
 from typing import TypeVar
 import numpy as np
@@ -175,6 +176,16 @@ class PPGraph:
         self.bus = self.model.get_data("bus")
         self.bus_i = {y:x for x,y in self.bus["BUS_I"].to_dict().items()}
         self.N = len(self.bus)
+        assert self.N > 0, "no bus data"
+
+        # reference bus
+        def bus_index(x):
+            if isinstance(x,list):
+                return [bus_index(y) for y in x]
+            return self.bus["BUS_I"].astype(int).tolist().index(int(x))
+        self.refbus = bus_index(self.bus[self.bus.BUS_TYPE==3].BUS_I.values.tolist())
+        assert len(self.refbus) == 1, f"one and only one reference bus may be defined"
+        self.refbus = self.refbus[0]
 
         # branch data
         self.branch = self.model.get_data("branch")
@@ -182,6 +193,19 @@ class PPGraph:
             for x,y in self.branch[["F_BUS","T_BUS"]].values
             ]
         self.M = len(self.branch)
+        assert self.M > 0, "no branch data"
+
+        # per-unit values 
+        self.puS = self.model.case["baseMVA"]
+        self.puV = self.bus.loc[self.refbus].BASE_KV
+        if self.puS == 0:
+            warnings.warn("network baseMVA not specified, per-unit calculations disabled")
+            self.puS = self.puV = self.puZ = 1.0
+        elif self.puV == 0:
+            warnings.warn("reference bus basekV not specified, per-unit calculations disabled")
+            self.puS = self.puV = self.puZ = 1.0
+        else:
+            self.puZ = self.puV**2 / self.puS
 
         # clear cache
         self.A = None # admittance matrix
@@ -277,7 +301,7 @@ class PPGraph:
         # Description
         
         Return the branch impedances for closed branches or zero for open branches.
-        """        
+        """
         if refresh:
             self.refresh()
         elif self.Z is None:
@@ -353,6 +377,7 @@ class PPGraph:
         Z = np.ones(self.M)
         self.B = (sp.csr_matrix((Z,[range(self.M),tbus]),shape=(self.M,self.N)) -\
                   sp.csr_matrix((Z,[range(self.M),fbus]),shape=(self.M,self.N))).T
+
         return self.B
 
     def laplacian(self,

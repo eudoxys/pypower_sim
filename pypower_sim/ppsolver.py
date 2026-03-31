@@ -48,12 +48,14 @@ from time import time
 from typing import Callable
 import warnings
 
+import numpy as np
 import pandas as pd
 
 from pypower.runpf import runpf
 from pypower.rundcopf import rundcopf
 from pypower.runopf import runopf as runacopf
 from pypower.ppoption import ppoption
+from pypower import idx_gen, idx_bus
 from pypower_sim.runosp import runosp
 
 class PPSolver:
@@ -131,22 +133,72 @@ class PPSolver:
         return success
 
     def solve_osp(self,
-        # costs:dict[str:float]|None=None,
         options:dict[str:str|int|float|dict]|None=None,
         update:str='success',
-        with_result:bool=False):
+        with_result:bool=False,
+        costs:dict[str,float]|None=None,
+        generators:dict[str,float]={
+            "gen":{
+                "GEN_STATUS": 1,
+                "MBASE": 100,
+                },
+            "gencost":{
+                "MODEL": 2, # polynomial function
+                "NCOST": 2, # linear cost
+                "COST0": 50, # operating cost ($/MWh)
+                "COST1": 0, # fixed cost ($/h)
+                },
+            "roundup":-1,
+            },
+        capacitors:dict[str,float]={
+            "gen":{
+                "GEN_STATUS": 1,
+                "MBASE": 100,
+                },
+            "gencost":{
+                "MODEL": 2, # polynomial function
+                "NCOST": 2, # linear cost
+                "COST0": 0, # operating cost ($/MWh)
+                "COST1": 0, # fixed cost ($/h)
+                },
+            "roundup":0,
+            },
+        condensers:dict[str,float]={
+            "gen":{
+                "GEN_STATUS": 1,
+                "MBASE": 100,
+                },
+            "gencost":{
+                "MODEL": 2, # polynomial function
+                "NCOST": 2, # linear cost
+                "COST0": 0, # operating cost ($/MWh)
+                "COST1": 0, # fixed cost ($/h)
+                },
+            "roundup":0,
+            },
+        ):
         """Solve the optimal sizing placement problem
 
         # Arguments
 
-        - `costs`: specify capacity expansion costs
-
         - `options`: specify problem options to enable/disable
+          (see `pypower_sim.runosp.OspConfig`)
 
         - `update`: when to update of model case data (must be in `
           {'always', 'success', 'failure', 'never'}`)
     
         - `with_result`: include result in return value
+
+        - `costs`: specify capacity expansion costs
+
+        - `generators`: default `gen`, `gencost`, and `roundup` values for new
+          generators
+
+        - `capacitors`: default `gen`, `gencost`, and `roundup` values for new
+          generators
+
+        - `condensers`: default `gen`, `gencost`, and `roundup` values for new
+          generators
 
         # Returns
 
@@ -158,39 +210,25 @@ class PPSolver:
 
         The following `costs` may specified:
 
-        1. `capacitor`: specifies the capacitor addition cost in $/MVAr (default `100`)
+        1. `capacitor`: specifies the capacitor addition cost in $/MVAr
+        (default `100`)
 
-        2. `condenser`: specifies the condenser addition cost in $/MVAr (default `1000`)
+        2. `condenser`: specifies the condenser addition cost in $/MVAr
+        (default `1000`)
 
-        3. `generation`: specifies the generation addition cost in $/MVA (default `1000`)
+        3. `generation`: specifies the generation addition cost in $/MVA
+        (default `1000`)
 
-        4. `curtailment`: specifies the load curtailment cost in $/MW (default `10000`)
+        4. `curtailment`: specifies the load curtailment cost in $/MW
+        (default `10000`)
 
         Note that in general the costs should increase in the order presented
         above, i.e., capacitors are the least costly and load curtailment is
         the most costly.
 
-        The following `options` are supported:
-
-        - `verbose`: enable verbose output from `cvxpy` (default `False`)
-
-        - `show_data`: output problem data before solving (default `False`)
-
-        - `complex`: enable complex flows in optimal solution (default `False`)
-
-        - `iterations`: maximum iterations allowed (default `10000`)
-
-        - `runtime`: maximum runtime allowed (default `None`)
-
-        - `angle`: voltage angle accuracy limit (default `10` degrees)
-
-        - `magnitude`: voltage magnitude constraint (default `5` %)
-
-        - `margin`: load capacity margin (default `20` %)
-
         # Caveat
 
-        This solver is experimental and is currently being developed
+        The optimal sizing/placement solver is experimental.
         """
         # warnings.warn("solver_osp is not implemented yet")
         result = runosp(self.model,config=options)
@@ -198,9 +236,90 @@ class PPSolver:
         success = status == 1
         if ( success and update in ["always","success"] ) \
                 or ( not success and update in ["always","failure"] ):
-            for name,values in result.items():
-                if name in self.model.case:
-                    self.model.case[name] = values
+
+            # update gen and gencost data
+            bus = self.model.get_data("bus")
+            gen = self.model.get_data("gen")
+            gencost = self.model.get_data("gencost")
+
+            # add new generators to gen busses
+            if sum(result["generators"]) > 0:
+                gen_bus, pmax = np.array([(int(x),y) for x,y in enumerate(result["generators"]) if round(y,3) > 0]).T
+                if "roundup" in generators:
+                    pmax = np.ceil(pmax*10**generators["roundup"])/10**generators["roundup"]
+                newgen = {
+                    "GEN_BUS":bus.iloc[gen_bus].BUS_I,
+                    "PMAX":pmax,
+                    "VG": np.abs(result["voltages"][gen_bus.astype(int)]).round(3)
+                    }
+                newgen.update({x:[y]*(len(gen_bus)) for x,y in generators["gen"].items()})
+                newgencost = {x:[y]*(len(gen_bus)) for x,y in generators["gencost"].items()}
+            else:
+                newgen = {x:[] for x in gen.columns}
+                newgencost = {x:[] for x in gencost.columns}
+            # TODO: remove PQ bus entries
+
+            # add active capacitors to gen busses
+            if sum(result["capacitors"]) > 0:
+                cap_bus, qmax = np.array([(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0]).T
+                if "roundup" in capacitors:
+                    qmax = np.ceil(qmax*10**capacitors["roundup"])/10**capacitors["roundup"]
+                newcap = {
+                    "GEN_BUS": bus.iloc[cap_bus].BUS_I,
+                    "QMAX":qmax,
+                    "VG": np.abs(result["voltages"][cap_bus.astype(int)]).round(3)
+                    }
+                newcap.update({x:[y]*(len(cap_bus)) for x,y in capacitors["gen"].items()})
+                newcapcost = {x:[y]*(len(cap_bus)) for x,y in capacitors["gencost"].items()}
+            else:
+                newcap = {x:[] for x in gen.columns}
+                newcapcost = {x:[] for x in gencost.columns}
+            # TODO: remove PQ bus entries
+
+            # add active condensers to gen busses
+            if sum(result["condensers"]) > 0:
+                con_bus, qmin = np.array([(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0]).T
+                if "roundup" in condensers:
+                    qmin = np.ceil(qmin*10**condensers["roundup"])/10**condensers["roundup"]
+                newcon = {
+                    "GEN_BUS": bus.iloc[con_bus].BUS_I,
+                    "QMIN": qmin,
+                    "VG": np.abs(result["voltages"][cons_bus.astype(int)]).round(3)
+                    }.update(condensers["gen"])
+                newcon.update({x:[y]*(len(con_bus)) for x,y in condensers["gen"].items()})
+                newcapcost = {x:[y]*(len(con_bus)) for x,y in condensers["gencost"].items()}
+            else:
+                newcon = {x:[] for x in gen.columns}
+                newconcost = {x:[] for x in gencost.columns}
+            # TODO: remove PQ bus entries
+
+            # add passive capacitors to PQ busses
+            # TODO
+
+            # add passive condensers to PQ busses
+            # TODO
+
+            # compile new gen array
+            gen = pd.concat([gen,
+                pd.DataFrame(newgen),
+                pd.DataFrame(newcap),
+                pd.DataFrame(newcon),
+                ]).fillna(0).reset_index(drop=True)
+            self.model.case["gen"] = gen.values
+
+            # upgrade PQ busses that now have gens
+            # bustype2 = set(x for x in self.model._bus_i(gen.GEN_BUS.values.astype(int).tolist()) if bus.iloc[x].BUS_TYPE == 1)
+            # self.model.case["bus"][list(bustype2),idx_bus.BUS_TYPE] = 2
+
+            # compile new gencost array
+            if len(gencost) > 0:
+                gencost = pd.concat([gencost,
+                    pd.DataFrame(newgencost),
+                    pd.DataFrame(newcapcost),
+                    pd.DataFrame(newconcost),
+                    ]).fillna(0).reset_index(drop=True)
+                self.model.case["gencost"] = gencost.values
+
         if with_result:
             return status,result
         else:

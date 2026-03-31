@@ -247,13 +247,13 @@ class PPModel:
         """
 
         # pylint: disable=too-many-instance-attributes
-        self.name = name
+        self.name : str = name
         """Name of case"""
 
-        self.case = None
+        self.case : dict[str|int|np.array] = None
         """Case data (see https://github.com/eudoxys/pypower)"""
         
-        self.zone_kv = None
+        self.zone_kv : list[float] = None
         """Bus zone voltages for per-unit calculations"""
 
         self.set_case(case)
@@ -262,25 +262,25 @@ class PPModel:
         if version:
             self.case["version"] = version
 
-        self.inputs = {}
+        self.inputs : dict = {}
         """Time series mapped data inputs (see `pypower_sim.ppdata.PPData.set_input`)"""
 
-        self.outputs = {}
+        self.outputs : dict = {}
         """Time series mapped data outputs (see `pypower_sim.ppdata.PPData.set_output)"""
 
-        self.recorders = {}
+        self.recorders : dict = {}
         """Time series non-mapped data outputs (see `pypower_sim.ppdata.PPData.set_recorder)"""
 
-        self.options = dict(self.default_options)
+        self.options : dict = dict(self.default_options)
         """Solver options"""
 
-        self.errors = []
+        self.errors : list = []
         """Solver errors detected"""
 
-        self.profile = None
+        self.profile : dict = None
         """Solver profile results"""
 
-        self.cost = None
+        self.cost : float = None
         """OPF cost result (if any)"""
 
     @staticmethod
@@ -369,10 +369,6 @@ class PPModel:
         for x in ["version","baseMVA","bus","branch","gen","gencost","dcline","dclinecost","gis"]:
             if x in data:
                 self.case[x] = data[x]
-        # arrays = [data[x] for x in ["version","baseMVA","bus","branch","gen","gencost","dcline","dclinecost","gis"]
-        #     if x in data]
-        # self.case = {x:(PypowerModelDecoder(y) if isinstance(x,str) and x in arrays else y) 
-        #     for x,y in data.items()}
         
         # check data
         assert "version" in self.case, "version missing in case"
@@ -384,12 +380,46 @@ class PPModel:
         assert "gen" in self.case, "gen missing in case"
 
         # gather zone basekv values
-        # print(self.case)
         if len(self.case["bus"]) > 0:
-            zone_kv = sorted(set([float(x) for x in self.case["bus"][:,idx_bus.BASE_KV]]))
-            self.zone_kv = [zone_kv.index(x) for x in self.case["bus"][:,idx_bus.BASE_KV]]
+            self.kv_zones = sorted(set([float(x) for x in self.case["bus"][:,idx_bus.BASE_KV]]))
+            self.bus_kvzone = [self.kv_zones.index(x) for x in self.case["bus"][:,idx_bus.BASE_KV]]
         else:
-            self.zone_kv = []
+            self.kv_zones = []
+            self.bus_kvzone = []
+
+    def _bus_i(self,x:int|list[int]) -> int|list[int]:
+        """Get bus index from bus id
+
+        Arguments
+        ---------
+
+        - `x`: bus id
+
+        Returns
+        -------
+
+        - `int`: bus index
+
+        - `list[int]`: list of bus indexes
+        """
+        if isinstance(x,int):
+            result = self.case["bus"][:,idx_bus.BUS_I].astype(int).tolist().index(int(x))
+        elif isinstance(x,list):
+            result = [self._bus_i(y) for y in x]
+        else:
+            raise ValueError(f"{x=} is not an integer of list of integers")
+        return result
+
+    def get_refbus(self) -> list[int]:
+        """Get list of reference busses
+
+        Returns
+        -------
+
+        - `list[int]`: list of reference bus indexes
+        """
+        refs = [n for n,x in enumerate(self.case["bus"][:,idx_bus.BUS_TYPE]==3) if x]
+        return self._bus_i(self.case["gen"][refs,idx_gen.GEN_BUS].astype(int).tolist())
 
     def from_dict(self,data:dict):
         """Convert dict to model
@@ -529,6 +559,7 @@ def {self.name}():
     def print(self,
         items:list[str]=None,
         file:[io.TextIOWrapper]=sys.stdout,
+        flush:bool=True
         ):
         """Print case data
 
@@ -540,6 +571,9 @@ def {self.name}():
         """
         if items is None:
             items = self.standard_idx
+
+        print(file=sys.stdout,flush=flush)
+        print(file=sys.stderr,flush=flush)
 
         if "bus" in items:
             bus_cols = PPModel.get_header("bus")
@@ -572,8 +606,9 @@ def {self.name}():
         if "gencost" in items and "gencost" in self.case:
             cost_cols = PPModel.get_header("gencost")
             ncost = self.case["gencost"].shape[1] - len(cost_cols)
-            cost_cols.extend([f"COST{n}" for n in range(int(ncost))])
+            cost_cols.extend([f"COST{n+1}" for n in range(int(ncost))])
             gencost = pd.DataFrame(data=self.case["gencost"],columns=cost_cols)
+            gencost.rename({"COST":"COST0"},inplace=True,axis=1)
             for column,dtype in self.types_idx["gencost"].items():
                 gencost[column] = gencost[column].astype(dtype)
             gencost.index.name="GENCOST"
@@ -591,12 +626,15 @@ def {self.name}():
         if "dclinecost" in items and "dclinecost" in self.case and len(self.case["dclinecost"]) > 0:
             cost_cols = PPModel.get_header("dclinecost")
             ncost = self.case["dclinecost"].shape[1] - len(cost_cols)
-            cost_cols.extend([f"COST{n}" for n in range(int(ncost))])
+            cost_cols.extend([f"COST{n+1}" for n in range(int(ncost))])
             dclinecost = pd.DataFrame(data=self.case["dclinecost"],columns=cost_cols)
+            dclinecost.rename({"COST":"COST0"},inplace=True,axis=1)
             for column,dtype in self.types_idx["dclinecost"].items():
                 dclinecost[column] = dclinecost[column].astype(dtype)
             dclinecost.index.name="DCLINECOST"
             print(dclinecost,file=file)
+        print(file=sys.stdout,flush=flush)
+        print(file=sys.stderr,flush=flush)
 
     def save_kml(self,
         filename:str,

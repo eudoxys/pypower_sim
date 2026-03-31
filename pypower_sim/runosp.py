@@ -30,7 +30,7 @@ subject to
 
 - $|J~x| \le V_a$ (voltage angle limits)
 
-- $c \le C~g$ (generation capacity expansion limits)
+- $c \le C$ (generation capacity expansion limits)
 
 where the variable
 
@@ -56,28 +56,35 @@ the parameter
 - $B \in \mathbb {R}^{N \times N}$ is the weighted network graph Laplacian
   based on the line susceptance per-unit Siemens,
 
-- $D \in \mathbb {R}^N$ is the complex load per-unit base MVA,
+- $C \in \mathbb {R}^N$ is the generation addition capacity limits in MW, where
+  $C_n=0$ when bus $n$ is a PQ bus.
+
+- $D \in \mathbb {C}^N$ is the complex load per-unit base MVA,
 
 - $F \in \mathbb {R}^M$ is the line flow limits per-unit base MVA,
 
-- $\hat G \in \mathbb {R}^N$ is the maximum complex power generation per-unit base MVA,
+- $\hat G \in \mathbb {C}^N$ is the maximum complex power generation per-unit base MVA,
 
-- $\check G \in \mathbb {R}^N$ is the minimum complex power generation per-unit base MVA,
+- $\check G \in \mathbb {C}^N$ is the minimum complex power generation per-unit base MVA,
 
 - $I \in \mathbb {R}^{M \times N}$ is the weighted network incidence matrix
   based on the line susceptance per-unit Siemens,
 
 - $J \in \mathbb {R}^{M \times N}$ is the unweighted network incidence matrix,
 
+- $V_a \in \mathbb{R}$ is the voltage angle limit in radians,
+
+- $V_m \in \mathbb{R}$ is the voltage magnitude limit per unit kV,
+
 and the cost
 
-- $C_c$ is the cost of adding capacitors in $/MVAr,
+- $C_c \in \mathbb{R}$ is the cost of adding capacitors in $/MVAr,
 
-- $C_d$ is the cost of adding condensers in $/MVAr,
+- $C_d \in \mathbb{R}$ is the cost of adding condensers in $/MVAr,
 
-- $C_g$ is the cost of adding generators in $/MW,
+- $C_g \in \mathbb{R}$ is the cost of adding generators in $/MW,
 
-- $C_s$ is the cost of adding substations in $/MVA,
+- $C_s \in \mathbb{R}$ is the cost of adding substations in $/MVA,
 
 # References
 
@@ -102,31 +109,34 @@ class OspConfig:
         """Construct an OSP solver configuration"""
 
         self.substation_cost:float=250000
-        """Substation installation cost ($/MVA)"""
+        """Substation installation cost (defaults to 250,000 $/MVA)"""
 
         self.generation_cost:float=750000
-        """Generation capacity expansion cost ($/MW)"""
+        """Generation capacity expansion cost (defaults to 750,000 $/MW)"""
 
         self.condenser_cost:float=400000
-        """Condenser capacity expansion cost ($/MVAr)"""
+        """Condenser capacity expansion cost (defaults to 400,000 $/MVAr)"""
 
         self.capacitor_cost:float=25000
-        """Capacitor capacity expansion costs ($/MW)"""
+        """Capacitor capacity expansion costs (defaults to 25,000 $/MW)"""
 
         self.load_margin: float = 0.2
-        """Load capacity margin (pu.MW peak)"""
+        """Load capacity margin (defaults to 0.2 pu.MW)"""
 
-        self.reference_bus: int = None
-        """Reference bus id"""
+        self.reference_bus: int|list[int] = None
+        """Reference bus id (defaults to `None`, i.e., `BUS_TYPE=3`)"""
+
+        self.reference_voltage: complex = complex(1,0)
+        """Reference bus voltage (defaults to $1+0j$ pu.kV)"""
 
         self.voltage_limit: float = 0.05
-        """Voltage magnitude deviation limit (pu.V)"""
+        """Voltage magnitude deviation limit (in pu.kV or `None`, defaults to 0.05 pu.kV)"""
 
         self.angle_limit: float = 10.0
-        """Voltage angle deviation limit (deg)"""
+        """Voltage angle deviation limit (in deg or `None`, defaults to 10 deg)"""
 
-        self.generation_limit: float = None
-        """Generation addition limit (pu)"""
+        self.generation_limit: float|list[float] = None
+        """Generation addition limit (in MW, defaults to `None`)"""
 
         self.cvx_solver = {
             "solver": "CLARABEL",
@@ -139,11 +149,25 @@ class OspConfig:
             "value": "value",
             "status": "status",
             "problem": "problem",
+            "generators": "generators",
+            "capacitors": "capacitors",
+            "condensers": "condensers",
+            "voltages": "voltages",
+            "error": "error",
         }
+        """Results to return from call to `pypower_sim.runosp.runosp`"""
 
         for key,value in kwargs.items():
             assert hasattr(self,key), f"{repr(key)} is not a valid OspConfig attribute name"
-            setattr(self,key,value)
+            values = getattr(self,key)
+            if isinstance(values,dict):
+                assert isinstance(value,dict), f"{key}={repr(value)} value must be a dict"
+                for subkey,subvalue in value.items():
+                    assert subkey in values, f"{subkey}={repr(subvalue)} key not in {key} dict"
+                    values[subkey] = subvalue
+                    setattr(self,key,values)
+            else:
+                setattr(self,key,value)
 
     def __repr__(self):
         data = [f"{x}={repr(getattr(self,x))}" for x in dir(self) if not x.startswith("_")]
@@ -195,11 +219,17 @@ def runosp(
     D = array([complex(*z) for z in bus[["PD","QD"]].values],ndmin=1)/model.case["baseMVA"] # demand
     I = graph.incidence(weighted=True,complex_flows=True).todense().T # weighted incidence matrix
     J = graph.incidence(weighted=False,complex_flows=False).todense().T # unweighted incidence matrix
-    F = array(branch["RATE_A"].values,ndmin=1) # line ratings
+    F = array(branch["RATE_A"].values,ndmin=1) / model.case["baseMVA"] # line ratings
 
-    reference_bus = bus[bus.BUS_TYPE==3].BUS_I.values.tolist() \
-        if config.reference_bus is None \
-        else bus_i(config.reference_bus) 
+    # reference bus and reference voltage
+    reference_bus = graph.refbus if config.reference_bus is None else config.reference_bus
+
+    if config.cvx_solver["verbose"]:
+        print(f"{G=}")
+        print(f"{D=}")
+        print(f"{I=}")
+        print(f"{J=}")
+        print(f"{F=}")
 
     x = cp.Variable(N,name='x') # bus voltage angles
     y = cp.Variable(N,name='y') # bus voltage magnitudes
@@ -212,33 +242,32 @@ def runosp(
     PD = D.real
     QD = D.imag
 
-    _i,_j = [bus_i(x) for x in gen["GEN_BUS"]],array([0]*len(gen)) # generator bus index
-
     # generator limits
-    PGmin = sp.sparse.coo_array((gen["PMIN"].values,(_i,_j)),shape=(N,1)).todense()/model.case["baseMVA"]
-    PGmax = sp.sparse.coo_array((gen["PMAX"].values,(_i,_j)),shape=(N,1)).todense()/model.case["baseMVA"]
-    QGmin = sp.sparse.coo_array((gen["QMIN"].values,(_i,_j)),shape=(N,1)).todense()/model.case["baseMVA"]
-    QGmax = sp.sparse.coo_array((gen["QMAX"].values,(_i,_j)),shape=(N,1)).todense()/model.case["baseMVA"]
+    i,j = [bus_i(x) for x in gen["GEN_BUS"]],array([0]*len(gen)) # generator bus index
+    PGmin = sp.sparse.coo_array((gen["PMIN"].values,(i,j)),shape=(N,1)).todense()/model.case["baseMVA"]
+    PGmax = sp.sparse.coo_array((gen["PMAX"].values,(i,j)),shape=(N,1)).todense()/model.case["baseMVA"]
+    QGmin = sp.sparse.coo_array((gen["QMIN"].values,(i,j)),shape=(N,1)).todense()/model.case["baseMVA"]
+    QGmax = sp.sparse.coo_array((gen["QMAX"].values,(i,j)),shape=(N,1)).todense()/model.case["baseMVA"]
 
     # substation construction cost
     sub_cost = config.substation_cost * cp.maximum(c-PGmax.T,0)
 
-    # cost of real power capacity increases
+    # cost of real power capacity additions
     gen_cost = config.generation_cost * cp.abs(c) 
 
-    # cost of reactive power capacity increases
-    var_cost = (config.capacitor_cost-config.condenser_cost)/2*d + (config.condenser_cost+config.capacitor_cost)/2*cp.abs(d)
+    # cost of reactive power capacity additions
+    svd_cost = (config.capacitor_cost-config.condenser_cost)/2*d + (config.condenser_cost+config.capacitor_cost)/2*cp.abs(d)
 
-    # total cost of increases
-    cost = cp.sum(sub_cost+gen_cost+var_cost)
+    # total cost of capacity additions
+    cost = cp.sum(sub_cost + gen_cost + svd_cost)
 
     # constraints
     constraints = [
         B @ x == g + c - PD * ( 1 + config.load_margin ),  # KCL/KVL real power laws
         B @ y == h + d - QD * ( 1 + config.load_margin ),  # KCL/KVL reactive power laws
 
-        x[bus_i(reference_bus)] == 0,  # swing bus voltage angle always 0
-        y[bus_i(reference_bus)] == 1,  # swing bus voltage magnitude is always 1
+        x[reference_bus] == np.angle(config.reference_voltage),  # swing bus(ses) voltage angle value(s)
+        y[reference_bus] == np.abs(config.reference_voltage),  # swing bus(ses) voltage magnitude value(s)
 
         cp.abs(I @ x) <= F, # line flow limits
 
@@ -249,12 +278,23 @@ def runosp(
         # real power capacity additions only positive and where existing generators are installed 
         c >= 0,
         ]
-    if config.voltage_limit:
-        constraints.append(cp.abs(y - 1) <= config.voltage_limit),  # limit voltage magnitude    
-    if config.angle_limit:
-        constraints.append(cp.abs(J @ x) <= np.pi/180*config.angle_limit), # +/-10 degree accuracy constraint
-    if config.generation_limit:
-        constraints.append(c <= g * config.generation_limit) # generation growth constraint
+
+    if config.voltage_limit: # limit voltage magnitude    
+
+        constraints.append(cp.abs(y - 1) <= config.voltage_limit),
+
+    if config.angle_limit: # +/-10 degree accuracy constraint
+
+        constraints.append(cp.abs(J @ x) <= np.pi/180*config.angle_limit),
+
+    if config.generation_limit: # generation growth constraint
+
+        constraints.append(c <= config.generation_limit)
+
+    else: # only allow generation to be added at non-PQ busses
+
+        k = bus[bus.BUS_TYPE == 1].index.astype(int).tolist()  # PQ bus list
+        constraints.append(c[k] == 0)
 
     problem = cp.Problem(cp.Minimize(cost), constraints)
     try:
@@ -262,26 +302,47 @@ def runosp(
         problem.solve(**config.cvx_solver)        
         value = problem.value
         status = problem.status.startswith("optimal")
+        generators = c.value
+        capacitors = np.clip(d.value,a_min=0,a_max=None)
+        condensers = np.clip(-d.value,a_min=0,a_max=None)
+        voltages = y.value * np.exp(x.value*1j)
+        error = None
 
     except Exception as err:
 
         value = None
         status = False
+        generators = None
+        capacitors = None
+        condensers = None
+        voltages = None
+        error = str(err)
 
     result = {x:eval(y) for x,y in config.results.items()}
     return result
 
 if __name__ == "__main__":
 
-    import os
+    import os, sys
     import time
+
     from ppmodel import PPModel
     from ppsolver import PPSolver
+
     import pandas as pd
 
     pd.options.display.max_columns = None
     pd.options.display.width = None
     pd.options.display.max_rows = None
+
+    import numpy as np
+    np.set_printoptions(formatter={
+        "float_kind":lambda x:f"{x:8.3f}",
+        "complex_kind":lambda x:f"{x.real:8.3f}{x.imag:+8.3f}j",
+        })
+
+    error_dump = True
+    error_stop = True
 
     tests = sorted([x[4:-3] for x in os.listdir("../test") if x.startswith("case") and x.endswith(".py")])
     errors = 0
@@ -289,7 +350,7 @@ if __name__ == "__main__":
     sz = max([len(x) for x in tests])
     print("Case"," "*(sz+2),f"{'Result':^20s}",f"{'Time':>8s}")
     print("-"*(sz+7),"-"*20,"--------")
-    for caseid in tests:
+    for caseid in ["4r"]: #tests:
 
         case = f"../test/case{caseid}.py"
         print(f"case{caseid}.py"," "*(sz-len(caseid)),end="",flush=True)
@@ -302,11 +363,24 @@ if __name__ == "__main__":
             errors += 1
         elif result["problem"].status != "optimal":
             warnings += 1
-        print(f"{result['problem'].status:^20s}",f"{toc-tic:8.3f}")
+        print(f"{str(result['problem'].status):^20s}",f"{toc-tic:8.3f}")
+        if not result["status"] and error_dump:
+            print(flush=True)
+            print(flush=True,file=sys.stderr)
+            test.print()
+            print(flush=True)
+            print(flush=True,file=sys.stderr)
+            runosp(test,{"cvx_solver":{"verbose":True}})
+            if error_stop:
+                break
 
     if errors > 0:
         print(f"{errors} error{'s' if errors > 1 else ''} found")
+        if error_stop:
+            print("Stopping on error")
+            sys.exit(1)
     if warnings > 0:
         print(f"{warnings} warning{'s' if warnings > 1 else ''} found")
     if errors == 0 and warnings == 0:
         print("No error found")
+    sys.exit(errors)
