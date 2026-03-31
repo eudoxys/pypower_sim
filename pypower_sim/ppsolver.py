@@ -208,7 +208,7 @@ class PPSolver:
 
         # Description
 
-        The following `costs` may specified:
+        The following construction `costs` may specified:
 
         1. `capacitor`: specifies the capacitor addition cost in $/MVAr
         (default `100`)
@@ -225,6 +225,24 @@ class PPSolver:
         Note that in general the costs should increase in the order presented
         above, i.e., capacitors are the least costly and load curtailment is
         the most costly.
+
+        ## Model Updates
+
+        The model is updated as follows:
+
+        1. Generators are added to non-PQ busses. Only the real power capacity
+        `PMAX` is set initially. 
+
+        2. Dynamic capacitors and condensers are added to non-PQ busses using
+        generators with zero real power `PMAX` by setting `QMAX` and `QMIN`
+        respectively.
+
+        3. Static capacitors and condensers are added to PQ busses by adding
+        the indicated reactive power to `BS`.
+
+        4. Generators cannot be added to non-PQ busses. To enable additional
+        generation to a bus, the `BUS_TYPE` must be set to `PV` (2) or `REF`
+        (3).
 
         # Caveat
 

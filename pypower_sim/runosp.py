@@ -341,8 +341,8 @@ if __name__ == "__main__":
         "complex_kind":lambda x:f"{x.real:8.3f}{x.imag:+8.3f}j",
         })
 
-    error_dump = True
-    error_stop = True
+    error_dump = False
+    error_stop = False
 
     tests = sorted([x[4:-3] for x in os.listdir("../test") if x.startswith("case") and x.endswith(".py")])
     errors = 0
@@ -350,7 +350,7 @@ if __name__ == "__main__":
     sz = max([len(x) for x in tests])
     print("Case"," "*(sz+2),f"{'Result':^20s}",f"{'Time':>8s}")
     print("-"*(sz+7),"-"*20,"--------")
-    for caseid in ["4r"]: #tests:
+    for caseid in tests:
 
         case = f"../test/case{caseid}.py"
         print(f"case{caseid}.py"," "*(sz-len(caseid)),end="",flush=True)
