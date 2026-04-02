@@ -1,8 +1,9 @@
 r"""Optimal resource sizing/placement
 
 Optimal sizing and placement (OSP) finds the lowest cost set of additional
-substations, generators, condensers, and capacitors needed to make a network
-model feasible and operate with a minimum of losses given a maximum load.
+substations, generators, condensers, capacitors, and powerline ratings needed
+to make a network model feasible and operate with a minimum of losses given a
+maximum load.
 
 For an $N$-bus and $M$-line network the problem is stated as 
 
@@ -100,8 +101,12 @@ and the cost
 # Caveats
 
 The OSP algorithm cannot increase line susceptance in cases where the OPF
-would become infeasible given the specified load margin, even when the OPF is
-feasible under the present conditions.
+would become infeasible given the specified load margin and resources
+available, even when the OPF is feasible under the same conditions. As a
+result, the OSP problem may be infeasible due to excessive reactive power
+losses on the lines. The only solution available at this time is to increase
+powerline susceptance on lines where the losses are too high and adjust line
+admittance accordingly.
 
 # References
 
