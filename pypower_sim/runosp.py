@@ -162,6 +162,9 @@ class OspConfig:
         self.generation_limit : float|list[float] = None
         """Generation addition limit (in MW, defaults to `None`)"""
 
+        self.line_rating : str = "RATE_A"
+        """Specify line rating field to use"""
+
         self.powerline_limit : float|list[float] = None
         """Powerline rating upgrade limit (in MW, defaults to `None`)"""
 
@@ -244,10 +247,10 @@ def runosp(
         return bus["BUS_I"].astype(int).tolist().index(int(x))
         
     G = graph.laplacian(weighted=True,complex_flows=True).todense() # weighted graph Laplacian
-    D = array([complex(*z) for z in bus[["PD","QD"]].values],ndmin=1)/model.case["baseMVA"] # demand
+    D = array([complex(*z) for z in bus[["PD","QD"]].values],ndmin=1) / model.case["baseMVA"] # demand
     I = graph.incidence(weighted=True,complex_flows=True).todense().T # weighted incidence matrix
     J = graph.incidence(weighted=False,complex_flows=False).todense().T # unweighted incidence matrix
-    F = array(branch["RATE_A"].values,ndmin=1) / model.case["baseMVA"] # line ratings
+    F = array(branch[config.line_rating].values,ndmin=1) / model.case["baseMVA"] # line ratings
 
     # reference bus and reference voltage
     reference_bus = graph.refbus if config.reference_bus is None else config.reference_bus
@@ -287,11 +290,14 @@ def runosp(
     # cost of reactive power capacity additions
     svd_cost = (config.capacitor_cost-config.condenser_cost)/2*d + (config.condenser_cost+config.capacitor_cost)/2*cp.abs(d)
 
-    # cost of line rated capacity expansion
-    pwl_cost = config.powerline_cost * f
-
     # total cost of capacity additions
-    cost = cp.sum(sub_cost + gen_cost + svd_cost) + sum(pwl_cost)
+    cost = cp.sum(sub_cost + gen_cost + svd_cost)
+
+    # cost of line rated capacity expansion
+    if config.powerline_limit is not None:
+
+        pwl_cost = config.powerline_cost * f
+        cost += sum(pwl_cost)
 
     # constraints
     constraints = [
@@ -301,8 +307,6 @@ def runosp(
         x[reference_bus] == np.angle(config.reference_voltage),  # swing bus(ses) voltage angle value(s)
         y[reference_bus] == np.abs(config.reference_voltage),  # swing bus(ses) voltage magnitude value(s)
 
-        cp.abs(I @ x) <= F + f, # line flow limits
-
         # generation limits
         PGmin <= g, g <= PGmax, # real power limits
         QGmin <= h, h <= QGmax, # reactive power limits
@@ -310,35 +314,37 @@ def runosp(
         c >= 0, # only real power generation additions allowed
         ]
 
-    # limit voltage magnitude
-    if not config.voltage_limit is None:
+    # voltage magnitudes are constrained
+    if config.voltage_limit is not None:
 
         constraints.append(cp.abs(y - 1) <= config.voltage_limit),
 
-    # limit voltage angle (recommend no more than +/-10 deg)
-    if not config.angle_limit is None:
+    # voltage angle are constrainted (recommend no more than +/-10 deg)
+    if config.angle_limit is not None:
 
         constraints.append(cp.abs(J @ x) <= np.pi/180*config.angle_limit),
 
-    # generation growth constraint
-    if not config.generation_limit is None:
+    # generation growth constraints specified (bus types may need to be changed by caller)
+    if config.generation_limit is not None:
 
         constraints.append(c <= config.generation_limit)
 
-    else: # only allow generation to be added at non-PQ busses
+    # only allow generation to be added at non-PQ busses
+    else: 
 
         k = bus[bus.BUS_TYPE == 1].index.astype(int).tolist()  # PQ bus list
         constraints.append(c[k] == 0)
 
-    # only line rating upgrades allowed
-    if not config.powerline_limit is None:
+    # line rating upgrades allowed
+    if config.powerline_limit is not None:
 
+        cp.abs(I @ x) <= F + f, # line flow limits
         f >= 0, 
 
+    # no line rating upgrades permitted
     else:
 
-        f == 0,
-
+        cp.abs(I @ x) <= F, # line flow limits
 
     problem = cp.Problem(cp.Minimize(cost), constraints)
 
@@ -357,13 +363,13 @@ def runosp(
         value = problem.value
         status = problem.status.startswith("optimal")
         generators = c.value
-        if not d.value is None:
+        if d.value is None:
+            error = problem.status
+        else:
             capacitors = np.clip(d.value,a_min=0,a_max=None)
             condensers = np.clip(-d.value,a_min=0,a_max=None)
             voltages = y.value * np.exp(x.value*1j)
             lines = f.value
-        else:
-            error = problem.status
 
     except Exception as err:
 
@@ -466,5 +472,6 @@ if __name__ == "__main__":
         print(f"{toc-tic:8.3f}",f"{(1-pwrtotal[1]/pwrtotal[2])*100:12.2f}% ",f"{(1-gentotal[2]/gentotal[1])*100:12.2f}% ")
     print("-"*20,*["-"*(len(x)+2) for x in testcalls],"--------","--------------","--------------")
 
+    print("","Output details","==============",sep="\n")
     for case,label,event,report in reportlist:
         print(f"{event.upper()} [{case}@{label}]: {report}")
