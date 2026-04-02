@@ -304,7 +304,7 @@ class PPSolver:
                     "VG": np.abs(result["voltages"][cons_bus.astype(int)]).round(3)
                     }.update(condensers["gen"])
                 newcon.update({x:[y]*(len(con_bus)) for x,y in condensers["gen"].items()})
-                newcapcost = {x:[y]*(len(con_bus)) for x,y in condensers["gencost"].items()}
+                newconcost = {x:[y]*(len(con_bus)) for x,y in condensers["gencost"].items()}
             else:
                 newcon = {x:[] for x in gen.columns}
                 newconcost = {x:[] for x in gencost.columns}
@@ -316,10 +316,6 @@ class PPSolver:
                 pd.DataFrame(newcon),
                 ]).fillna(0).reset_index(drop=True)
             self.model.case["gen"] = gen.values
-
-            # upgrade PQ busses that now have gens
-            # bustype2 = set(x for x in self.model._bus_i(gen.GEN_BUS.values.astype(int).tolist()) if bus.iloc[x].BUS_TYPE == 1)
-            # self.model.case["bus"][list(bustype2),idx_bus.BUS_TYPE] = 2
 
             # compile new gencost array
             if len(gencost) > 0:

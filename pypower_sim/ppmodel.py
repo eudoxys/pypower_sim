@@ -378,6 +378,8 @@ class PPModel:
         assert "bus" in self.case, "bus missing in case"
         assert "branch" in self.case, "branch missing in case"
         assert "gen" in self.case, "gen missing in case"
+        if "gencost" in self.case:
+            assert len(self.case["gencost"]) == len(self.case["gen"]), f"len(gencost)={len(self.case['gencost'])} does not match len(gen)={len(self.case['gen'])}"
 
         # gather zone basekv values
         if len(self.case["bus"]) > 0:

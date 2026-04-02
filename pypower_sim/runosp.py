@@ -6,7 +6,7 @@ model feasible and operate with a minimum of losses given a maximum load.
 
 For an $N$-bus and $M$-line network the problem is stated as 
 
-$\underset{x,y,g,h,c,d}{\min} (c-\Re \hat{G}) \lfloor_0 ~ C_s + c~G_g + \frac12(C_c-C_d)~d + \frac12(C_c+C_d)~|d|$
+$\underset{x,y,g,h,c,d}{\min} (c-\Re \hat{G}) \lfloor_0 ~ C_s + c~G_g + \frac12(C_c-C_d)~d + \frac12(C_c+C_d)~|d| + C_l ~ f$
 
 subject to
 
@@ -17,8 +17,6 @@ subject to
 - $x_{ref} = 0$ (swing bus angle set to 0)
 
 - $y_{ref} = 1$ (swing bus magnitude set to 1)
-
-- $I~x \le F$ (line flow limits)
 
 - $\Re \check G \le g \le \Re \hat G$ (real power generation limits)
 
@@ -32,6 +30,12 @@ subject to
 
 - $c \le C$ (generation capacity expansion limits)
 
+- $I~x \le F + f$ (line flow limits)
+
+- $f \ge 0$ (powerline rating upgrade can only be positive)
+
+- $f \le K$ (powerline rating upgrade limits, if any)
+
 where the variable
 
 - $c \in \mathbb {R}^N$ is the new real power generation added to provide
@@ -40,6 +44,9 @@ where the variable
 - $d \in \mathbb {R}^N$ is the new reactive power support devices added to
   provide sufficient reactive power to minimize line losses and meet the load
   plus the load margin,
+
+- $f \in \mathbb {R}^M$ is the adding line rating needed to make the powerflow
+  feasible given the load, including the load margin,
 
 - $g \in \mathbb {R}^N$ is the real power generation dispatched to meet the
   load plus the load margin,
@@ -72,6 +79,8 @@ the parameter
 
 - $J \in \mathbb {R}^{M \times N}$ is the unweighted network incidence matrix,
 
+- $K \in \mathbb {R}^M$ is the line rating upgrade limits,
+
 - $V_a \in \mathbb{R}$ is the voltage angle limit in radians,
 
 - $V_m \in \mathbb{R}$ is the voltage magnitude limit per unit kV,
@@ -84,13 +93,20 @@ and the cost
 
 - $C_g \in \mathbb{R}$ is the cost of adding generators in $/MW,
 
+- $C_l \in \mathbb{R}$ is the cost of upgrading a line rating in $/MW,
+
 - $C_s \in \mathbb{R}$ is the cost of adding substations in $/MVA,
+
+# Caveats
+
+The OSP algorithm cannot increase line susceptance in cases where the OPF
+would become infeasible given the specified load margin, even when the OPF is
+feasible under the present conditions.
 
 # References
 
 - [Joshua Taylor, *Convex Optimization of Power Systems*, Cambridge University
-  Press (2015)]
-  (https://books.google.com/books?hl=en&lr=&id=JBdoBgAAQBAJ&oi=fnd&pg=PR11&dq=info:4_zKJR2GVGAJ:scholar.google.com&ots=A23AB6jlr9&sig=D2uoDpJMlNfCT9an9WOMuBvfk_k#v=onepage&q&f=false)
+  Press (2015)](https://books.google.com/books?hl=en&lr=&id=JBdoBgAAQBAJ&oi=fnd&pg=PR11&dq=info:4_zKJR2GVGAJ:scholar.google.com&ots=A23AB6jlr9&sig=D2uoDpJMlNfCT9an9WOMuBvfk_k#v=onepage&q&f=false)
 
 - [CVXPY](https://www.cvxpy.org/index.html)
 """
@@ -108,35 +124,41 @@ class OspConfig:
     def __init__(self,**kwargs):
         """Construct an OSP solver configuration"""
 
-        self.substation_cost:float=250000
+        self.substation_cost : float=250e3
         """Substation installation cost (defaults to 250,000 $/MVA)"""
 
-        self.generation_cost:float=750000
+        self.generation_cost : float=7500e3
         """Generation capacity expansion cost (defaults to 750,000 $/MW)"""
 
-        self.condenser_cost:float=400000
+        self.condenser_cost : float=400e3
         """Condenser capacity expansion cost (defaults to 400,000 $/MVAr)"""
 
-        self.capacitor_cost:float=25000
+        self.capacitor_cost : float=25e3
         """Capacitor capacity expansion costs (defaults to 25,000 $/MW)"""
 
-        self.load_margin: float = 0.2
+        self.powerline_cost : float = 400e3 # roughly $2M/mile for 500 MW over 100 miles
+        """Powerline capacity expansion costs (defaults to 400,000 $/MW)"""
+
+        self.load_margin : float = 0.2
         """Load capacity margin (defaults to 0.2 pu.MW)"""
 
-        self.reference_bus: int|list[int] = None
+        self.reference_bus : int|list[int] = None
         """Reference bus id (defaults to `None`, i.e., `BUS_TYPE=3`)"""
 
-        self.reference_voltage: complex = complex(1,0)
+        self.reference_voltage : complex = complex(1,0)
         """Reference bus voltage (defaults to $1+0j$ pu.kV)"""
 
-        self.voltage_limit: float = 0.05
+        self.voltage_limit : float = 0.05
         """Voltage magnitude deviation limit (in pu.kV or `None`, defaults to 0.05 pu.kV)"""
 
-        self.angle_limit: float = 10.0
+        self.angle_limit : float = 10.0
         """Voltage angle deviation limit (in deg or `None`, defaults to 10 deg)"""
 
-        self.generation_limit: float|list[float] = None
+        self.generation_limit : float|list[float] = None
         """Generation addition limit (in MW, defaults to `None`)"""
+
+        self.powerline_limit : float|list[float] = None
+        """Powerline rating upgrade limit (in MW, defaults to `None`)"""
 
         self.cvx_solver = {
             "solver": "CLARABEL",
@@ -153,6 +175,7 @@ class OspConfig:
             "capacitors": "capacitors",
             "condensers": "condensers",
             "voltages": "voltages",
+            "lines": "lines",
             "error": "error",
         }
         """Results to return from call to `pypower_sim.runosp.runosp`"""
@@ -237,6 +260,7 @@ def runosp(
     h = cp.Variable(N,name='h') # reactive power dispatch
     c = cp.Variable(N,name='c') # real power addition needed
     d = cp.Variable(N,name='d') # reactive power addition needed
+    f = cp.Variable(M,name='f') # line flow capacity expansion
 
     B = G.imag
     PD = D.real
@@ -258,8 +282,11 @@ def runosp(
     # cost of reactive power capacity additions
     svd_cost = (config.capacitor_cost-config.condenser_cost)/2*d + (config.condenser_cost+config.capacitor_cost)/2*cp.abs(d)
 
+    # cost of line rated capacity expansion
+    pwl_cost = config.powerline_cost * f
+
     # total cost of capacity additions
-    cost = cp.sum(sub_cost + gen_cost + svd_cost)
+    cost = cp.sum(sub_cost + gen_cost + svd_cost) + sum(pwl_cost)
 
     # constraints
     constraints = [
@@ -269,25 +296,27 @@ def runosp(
         x[reference_bus] == np.angle(config.reference_voltage),  # swing bus(ses) voltage angle value(s)
         y[reference_bus] == np.abs(config.reference_voltage),  # swing bus(ses) voltage magnitude value(s)
 
-        cp.abs(I @ x) <= F, # line flow limits
+        cp.abs(I @ x) <= F + f, # line flow limits
 
         # generation limits
         PGmin <= g, g <= PGmax, # real power limits
         QGmin <= h, h <= QGmax, # reactive power limits
 
-        # real power capacity additions only positive and where existing generators are installed 
-        c >= 0,
+        c >= 0, # only real power generation additions allowed
         ]
 
-    if config.voltage_limit: # limit voltage magnitude    
+    # limit voltage magnitude
+    if not config.voltage_limit is None:
 
         constraints.append(cp.abs(y - 1) <= config.voltage_limit),
 
-    if config.angle_limit: # +/-10 degree accuracy constraint
+    # limit voltage angle (recommend no more than +/-10 deg)
+    if not config.angle_limit is None:
 
         constraints.append(cp.abs(J @ x) <= np.pi/180*config.angle_limit),
 
-    if config.generation_limit: # generation growth constraint
+    # generation growth constraint
+    if not config.generation_limit is None:
 
         constraints.append(c <= config.generation_limit)
 
@@ -296,35 +325,55 @@ def runosp(
         k = bus[bus.BUS_TYPE == 1].index.astype(int).tolist()  # PQ bus list
         constraints.append(c[k] == 0)
 
+    # only line rating upgrades allowed
+    if not config.powerline_limit is None:
+
+        f >= 0, 
+
+    else:
+
+        f == 0,
+
+
     problem = cp.Problem(cp.Minimize(cost), constraints)
+
+    # construct result
+    error = None
+    value = None
+    status = False
+    generators = None
+    capacitors = None
+    condensers = None
+    voltages = None
+    lines = None
     try:
 
         problem.solve(**config.cvx_solver)        
         value = problem.value
         status = problem.status.startswith("optimal")
         generators = c.value
-        capacitors = np.clip(d.value,a_min=0,a_max=None)
-        condensers = np.clip(-d.value,a_min=0,a_max=None)
-        voltages = y.value * np.exp(x.value*1j)
-        error = None
+        if not d.value is None:
+            capacitors = np.clip(d.value,a_min=0,a_max=None)
+            condensers = np.clip(-d.value,a_min=0,a_max=None)
+            voltages = y.value * np.exp(x.value*1j)
+            lines = f.value
+        else:
+            error = problem.status
 
     except Exception as err:
 
-        value = None
-        status = False
-        generators = None
-        capacitors = None
-        condensers = None
-        voltages = None
         error = str(err)
 
     result = {x:eval(y) for x,y in config.results.items()}
+
+    # print(result["lines"])
     return result
 
 if __name__ == "__main__":
 
     import os, sys
     import time
+    import warnings
 
     from ppmodel import PPModel
     from ppsolver import PPSolver
@@ -344,43 +393,73 @@ if __name__ == "__main__":
     error_dump = False
     error_stop = False
 
-    tests = sorted([x[4:-3] for x in os.listdir("../test") if x.startswith("case") and x.endswith(".py")])
-    errors = 0
-    warnings = 0
+    def intx(x,with_tail=False):
+        """Return int value with tail string"""
+        import re
+        match = re.search(r"\d+",x)
+        if match:
+            result = match.group()
+            if with_tail:
+                return int(result),x[len(result):]
+            return int(result)
+        raise ValueError("not an integer")
+    tests = sorted([x[4:-3] for x in os.listdir("../test") if x.startswith("case") and x.endswith(".py")],key=lambda x:intx(x,True))
     sz = max([len(x) for x in tests])
-    print("Case"," "*(sz+2),f"{'Result':^20s}",f"{'Time':>8s}")
-    print("-"*(sz+7),"-"*20,"--------")
+    testcalls = {
+                "Initial PF": "solve_pf",
+                "Initial OPF": "solve_opf",
+                "Optimal PF": "solve_pf",
+                "Optimal Sizing":"solve_osp",
+                "Sized OPF":"solve_opf",
+                "Sized PF":"solve_pf",
+                }
+    print(f"{'Case':^20s}",*[f" {x} " for x in testcalls],f"{'Time (s)':^8s}",f"{'Newgen (%MW)':^14s}",f"{'Savings (%MW)':^14s}")
+    print("-"*20,*["-"*(len(x)+2) for x in testcalls],"--------","--------------","--------------")
+    reportlist = []
     for caseid in tests:
-
         case = f"../test/case{caseid}.py"
-        print(f"case{caseid}.py"," "*(sz-len(caseid)),end="",flush=True)
+        print(f"case{caseid}.py"," "*(20-len(caseid)-7),end="",flush=True)
 
-        test = PPModel(os.path.splitext(os.path.basename(case))[0],case=case)
+        try:
+            model = PPModel(os.path.splitext(os.path.basename(case))[0],case=case)
+            assert "gencost" in model.case, "no gencost data"
+        except Exception as err:
+            reportlist.append((case,"model","exception",str(err)))
+            print(f"*** unusable model: {err} ***",flush=True)
+            continue
         tic = time.time()
-        result = runosp(test)
+        solver = PPSolver(model)
+        pwrtotal = []
+        gentotal = []
+        for label,call in testcalls.items():
+            try:
+                with warnings.catch_warnings(record=True) as recording:
+                    warnings.simplefilter("always")
+                    status,result = getattr(solver,call)(with_result=True)
+                report = "ok"
+                if recording:
+                    report = "warning"
+                    for msg in recording:
+                        reportlist.append((case,label,"warning",f"{msg.category.__name__} -- {msg.message}" ))
+                if status == False:
+                    if "error" in result:
+                        report = "error"
+                        reportlist.append((case,label,"error",result["error"]))
+                    else:
+                        report = "failed"
+                        reportlist.append((case,label,"failed",result["raw"]["output"]["message"]))
+                elif call == "solve_pf":
+                    pwrtotal.append(sum((abs(complex(x,y)) for x,y in model.get_data("gen")[["PMAX","QMAX"]].values)))
+                    gentotal.append(sum((abs(complex(x,y)) for x,y in model.get_data("gen")[["PG","QG"]].values)))
+            except Exception as err:
+                report = "exception"
+                reportlist.append((case,label,"exception",err))
+                model.print()
+                raise
+            print(" "*((len(label)-len(report))//2),report," "*((len(label)+1-len(report))//2),end=" ",flush=True)
         toc = time.time()
-        if result["status"] == False:
-            errors += 1
-        elif result["problem"].status != "optimal":
-            warnings += 1
-        print(f"{str(result['problem'].status):^20s}",f"{toc-tic:8.3f}")
-        if not result["status"] and error_dump:
-            print(flush=True)
-            print(flush=True,file=sys.stderr)
-            test.print()
-            print(flush=True)
-            print(flush=True,file=sys.stderr)
-            runosp(test,{"cvx_solver":{"verbose":True}})
-            if error_stop:
-                break
+        print(f"{toc-tic:8.3f}",f"{(1-pwrtotal[1]/pwrtotal[2])*100:12.2f}% ",f"{(1-gentotal[2]/gentotal[1])*100:12.2f}% ")
+    print("-"*20,*["-"*(len(x)+2) for x in testcalls],"--------","--------------","--------------")
 
-    if errors > 0:
-        print(f"{errors} error{'s' if errors > 1 else ''} found")
-        if error_stop:
-            print("Stopping on error")
-            sys.exit(1)
-    if warnings > 0:
-        print(f"{warnings} warning{'s' if warnings > 1 else ''} found")
-    if errors == 0 and warnings == 0:
-        print("No error found")
-    sys.exit(errors)
+    for case,label,event,report in reportlist:
+        print(f"{event.upper()} [{case}@{label}]: {report}")
