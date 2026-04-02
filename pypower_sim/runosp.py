@@ -7,7 +7,7 @@ maximum load.
 
 For an $N$-bus and $M$-line network the problem is stated as 
 
-$\underset{x,y,g,h,c,d}{\min} (c-\Re \hat{G}) \lfloor_0 ~ C_s + c~G_g + \frac12(C_c-C_d)~d + \frac12(C_c+C_d)~|d| + C_l ~ f$
+$\underset{x,y,g,h,c,d}{\min} (c-\Re \hat{G}) \lfloor_0 ~ C_s + c~G_g + \frac12(C_c-C_d)~d + \frac12(C_c+C_d)~|d| + C_l ~ f + 10^9 ~ e$
 
 subject to
 
@@ -19,11 +19,13 @@ subject to
 
 - $y_{ref} = 1$ (swing bus magnitude set to 1)
 
-- $\Re \check G \le g \le \Re \hat G$ (real power generation limits)
+- $\Re \check G - e \le g \le \Re \hat G + e$ (real power generation limits)
 
-- $\Im \check G \le h \le \Im \hat G$ (reactive power generation limits)
+- $\Im \check G - e \le h \le \Im \hat G + e$ (reactive power generation limits)
 
 - $c \ge 0$ (generation real power can only be positive)
+
+- $e \ge 0$ (power generation constraint relaxation)
 
 - $|y-1| \le V_m$ (voltage magnitude limits)
 
@@ -45,6 +47,9 @@ where the variable
 - $d \in \mathbb {R}^N$ is the new reactive power support devices added to
   provide sufficient reactive power to minimize line losses and meet the load
   plus the load margin,
+
+- $e \in \mathbb {R}^N$ is the power generation constraint flexibility needed
+  to make the problem feasible when it otherwise infeasible,
 
 - $f \in \mathbb {R}^M$ is the adding line rating needed to make the powerflow
   feasible given the load, including the load margin,
@@ -168,6 +173,9 @@ class OspConfig:
         self.powerline_limit : float|list[float] = None
         """Powerline rating upgrade limit (in MW, defaults to `None`)"""
 
+        self.generation_constraint_cost : float = None
+        """Relaxed generation constraint cost (defaults to 1e9 $/MW, `None` for hard constraints)"""
+
         self.cvx_solver = {
             "solver": "CLARABEL",
             "verbose": False,
@@ -268,7 +276,10 @@ def runosp(
     h = cp.Variable(N,name='h') # reactive power dispatch
     c = cp.Variable(N,name='c') # real power addition needed
     d = cp.Variable(N,name='d') # reactive power addition needed
-    e = cp.Variable(N,name='e') # power balance relaxation
+    if config.generation_constraint_cost is not None:
+        e = cp.Variable(N,name='e') # power balance relaxation
+    else:
+        e = 0
     f = cp.Variable(M,name='f') # line flow capacity expansion
 
     B = G.imag
@@ -301,7 +312,8 @@ def runosp(
         cost += sum(pwl_cost)
 
     # power balance relaxation cost
-    cost += sum(1e9 * cp.abs(e))
+    if config.generation_constraint_cost:
+        cost += sum(1e9 * e)
 
     # constraints
     constraints = [
@@ -342,13 +354,19 @@ def runosp(
     # line rating upgrades allowed
     if config.powerline_limit is not None:
 
-        cp.abs(I @ x) <= F + f, # line flow limits
-        f >= 0, 
+        constraints.append([
+            cp.abs(I @ x) <= F + f, # line flow limits
+            f >= 0, 
+            ])
 
     # no line rating upgrades permitted
     else:
 
-        cp.abs(I @ x) <= F, # line flow limits
+        constraints.append(cp.abs(I @ x) <= F) # line flow limits
+
+    if config.generation_constraint_cost:
+        constraint.append(e >= 0) # power generation constraint relaxation can only be positive
+
 
     problem = cp.Problem(cp.Minimize(cost), constraints)
 
@@ -365,7 +383,7 @@ def runosp(
 
         problem.solve(**config.cvx_solver)        
         value = problem.value
-        status = problem.status.startswith("optimal")
+        status = problem.value is not None
         generators = c.value
         if d.value is None:
             error = problem.status

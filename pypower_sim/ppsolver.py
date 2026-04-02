@@ -262,7 +262,9 @@ class PPSolver:
             pqbus_ndx = bus[bus.BUS_TYPE == idx_bus.PQ].index.values.astype(int)
 
             # add new generators to gen busses
-            gens = [(int(x),y) for x,y in enumerate(result["generators"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
+            gens = None
+            if "generators" in result and result["generators"] is not None:
+                gens = [(int(x),y) for x,y in enumerate(result["generators"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
             if gens:
                 gen_bus, pmax = np.array(gens).T
                 if "roundup" in generators:
@@ -279,7 +281,9 @@ class PPSolver:
                 newgencost = {x:[] for x in gencost.columns}
 
             # add active capacitors to gen busses
-            caps = [(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
+            caps = None
+            if "capacitors" in result and result["capacitors"] is not None:
+                caps = [(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
             if caps:
                 cap_bus, qmax = np.array(caps).T
                 if "roundup" in capacitors:
@@ -296,7 +300,9 @@ class PPSolver:
                 newcapcost = {x:[] for x in gencost.columns}
 
             # add active condensers to gen busses
-            cons = [(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
+            cons = None
+            if "condensers" in result and result["condensers"] is not None:
+                cons = [(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
             if cons:
                 con_bus, qmin = np.array(cons).T
                 if "roundup" in condensers:
@@ -330,7 +336,9 @@ class PPSolver:
                 self.model.case["gencost"] = gencost.values
 
             # add passive capacitors to PQ busses
-            caps = [(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) in pqbus_ndx]
+            caps = None
+            if "capacitors" in result and result["capacitors"] is not None:
+                caps = [(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) in pqbus_ndx]
             if caps:
                 cap_bus, qmax = np.array(caps).T
                 if "roundup" in capacitors:
@@ -342,7 +350,9 @@ class PPSolver:
                 self.model.case["bus"][newcap["BUS"],idx_bus.BS] += newcap["BS"]
 
             # add passive condensers to PQ busses
-            cons = [(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) in pqbus_ndx]
+            cons = None
+            if "condensers" in result and result["condensers"] is not None:
+                cons = [(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
             if cons:
                 con_bus, qmin = np.array(cons).T
                 if "roundup" in condensers:
