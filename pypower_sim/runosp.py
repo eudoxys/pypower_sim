@@ -268,6 +268,7 @@ def runosp(
     h = cp.Variable(N,name='h') # reactive power dispatch
     c = cp.Variable(N,name='c') # real power addition needed
     d = cp.Variable(N,name='d') # reactive power addition needed
+    e = cp.Variable(N,name='e') # power balance relaxation
     f = cp.Variable(M,name='f') # line flow capacity expansion
 
     B = G.imag
@@ -299,6 +300,9 @@ def runosp(
         pwl_cost = config.powerline_cost * f
         cost += sum(pwl_cost)
 
+    # power balance relaxation cost
+    cost += sum(1e9 * cp.abs(e))
+
     # constraints
     constraints = [
         B @ x == g + c - PD * ( 1 + config.load_margin ),  # KCL/KVL real power laws
@@ -308,8 +312,8 @@ def runosp(
         y[reference_bus] == np.abs(config.reference_voltage),  # swing bus(ses) voltage magnitude value(s)
 
         # generation limits
-        PGmin <= g, g <= PGmax, # real power limits
-        QGmin <= h, h <= QGmax, # reactive power limits
+        PGmin-e <= g, g <= PGmax+e, # real power limits
+        QGmin-e <= h, h <= QGmax+e, # reactive power limits
 
         c >= 0, # only real power generation additions allowed
         ]

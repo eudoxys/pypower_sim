@@ -262,8 +262,9 @@ class PPSolver:
             pqbus_ndx = bus[bus.BUS_TYPE == idx_bus.PQ].index.values.astype(int)
 
             # add new generators to gen busses
-            if sum(result["generators"]) > 0:
-                gen_bus, pmax = np.array([(int(x),y) for x,y in enumerate(result["generators"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]).T
+            gens = [(int(x),y) for x,y in enumerate(result["generators"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
+            if gens:
+                gen_bus, pmax = np.array(gens).T
                 if "roundup" in generators:
                     pmax = np.ceil(pmax*10**generators["roundup"])/10**generators["roundup"]
                 newgen = {
@@ -278,8 +279,9 @@ class PPSolver:
                 newgencost = {x:[] for x in gencost.columns}
 
             # add active capacitors to gen busses
-            if sum(result["capacitors"]) > 0:
-                cap_bus, qmax = np.array([(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]).T
+            caps = [(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
+            if caps:
+                cap_bus, qmax = np.array(caps).T
                 if "roundup" in capacitors:
                     qmax = np.ceil(qmax*10**capacitors["roundup"])/10**capacitors["roundup"]
                 newcap = {
@@ -294,8 +296,9 @@ class PPSolver:
                 newcapcost = {x:[] for x in gencost.columns}
 
             # add active condensers to gen busses
-            if sum(result["condensers"]) > 0:
-                con_bus, qmin = np.array([(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]).T
+            cons = [(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
+            if cons:
+                con_bus, qmin = np.array(cons).T
                 if "roundup" in condensers:
                     qmin = np.ceil(qmin*10**condensers["roundup"])/10**condensers["roundup"]
                 newcon = {
@@ -327,8 +330,9 @@ class PPSolver:
                 self.model.case["gencost"] = gencost.values
 
             # add passive capacitors to PQ busses
-            if sum(result["capacitors"]) > 0:
-                cap_bus, qmax = np.array([(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) in pqbus_ndx]).T
+            caps = [(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) in pqbus_ndx]
+            if caps:
+                cap_bus, qmax = np.array(caps).T
                 if "roundup" in capacitors:
                     bs = np.ceil(qmax*10**capacitors["roundup"])/10**capacitors["roundup"]
                 newcap = {
@@ -338,8 +342,9 @@ class PPSolver:
                 self.model.case["bus"][newcap["BUS"],idx_bus.BS] += newcap["BS"]
 
             # add passive condensers to PQ busses
-            if sum(result["condensers"]) > 0:
-                con_bus, qmin = np.array([(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) in pqbus_ndx]).T
+            cons = [(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) in pqbus_ndx]
+            if cons:
+                con_bus, qmin = np.array(cons).T
                 if "roundup" in condensers:
                     bs = -np.ceil(qmin*10**condensers["roundup"])/10**condensers["roundup"]
                 newcon = {
