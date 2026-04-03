@@ -224,6 +224,12 @@ class PPModel:
         "CPF_ADAPT_STEP": False,
         "CPF_ERROR_TOL": 1e-3,
     }
+    """Solver options"""
+
+    default_values = {
+        "BASE_KV" : 230.0
+    }
+    """Default for missing/zero values (`None` to leave zeros)"""
 
     # pylint: disable=too-many-public-methods
 
@@ -380,6 +386,12 @@ class PPModel:
         assert "gen" in self.case, "gen missing in case"
         if "gencost" in self.case:
             assert len(self.case["gencost"]) == len(self.case["gen"]), f"len(gencost)={len(self.case['gencost'])} does not match len(gen)={len(self.case['gen'])}"
+
+        # fix zero basekv values
+        if "BASE_KV" in self.default_values and not self.default_values["BASE_KV"] is None:
+            zerokv = self.case["bus"][:,idx_bus.BASE_KV] == 0
+            if zerokv.any():
+                self.case["bus"][zerokv,idx_bus.BASE_KV] = self.default_values["BASE_KV"]
 
         # gather zone basekv values
         if len(self.case["bus"]) > 0:
