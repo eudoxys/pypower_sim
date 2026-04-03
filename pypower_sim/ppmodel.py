@@ -483,7 +483,7 @@ class PPModel:
 
     def from_json(self,*args,**kwargs):
         """Convert model from JSON"""
-        self.from_dict(json.load(*args,**kwargs))
+        self.from_dict(json.load(*args,**kwargs,object_hook=PypowerModelDecoder))
 
     def save(self,
         file:io.StringIO|str|None=None,
@@ -1092,8 +1092,15 @@ def {self.name}():
         linklist = [[int(y) for y in x] for x in links]
         return linklist
 
-    def get_violations(self) -> dict[str:list[str]]:
+    def get_violations(self,
+        precision : int = 3 # rounding precision
+        ) -> dict[str:list[str]]:
         """Get list of powerflow case violations
+
+        Arguments
+        ---------
+
+        - `precision`: rounding precision to use when comparion actual to limits and ratings
 
         Returns
         -------
@@ -1101,12 +1108,13 @@ def {self.name}():
         dict[]
         """
         result = []
+        prec = lambda x : round(x,precision)
 
         # check busses
         for n,bus in self.get_data("bus").iterrows():
             
             # check bus voltage magnitudes
-            if not bus.VMIN <= bus.VM <= bus.VMAX:
+            if not prec(bus.VMIN) <= prec(bus.VM) <= prec(bus.VMAX):
                 result.append(f"bus#{n}: bus '{bus.BUS_I:.0f}' VM={bus.VM:.1f} puV outside limits ({bus.VMIN:.1f},{bus.VMAX:.1f}) puV")
 
         # check branches
@@ -1117,18 +1125,18 @@ def {self.name}():
                 continue
             flow = max(abs(complex(branch.PF,branch.QF)),abs(complex(branch.PT,branch.QT)))
             rated = 0.0 if branch.BR_STATUS == 0 else max(branch.RATE_A,branch.RATE_B,branch.RATE_C) 
-            if flow > rated and rated > 0:
+            if prec(flow) > prec(rated) and prec(rated) > 0:
                 result.append(f"branch#{n}: branch from bus '{branch.F_BUS:.0f}' to '{branch.T_BUS:.0f}' apparent power flow {flow:.1f} MVA exceeds maximum rating {rated:.1f} MW")
 
         # check generators
         for n,gen in self.get_data("gen").iterrows():
 
             # check real power
-            if not gen.PMIN <= gen.PG <= gen.PMAX:
+            if not prec(gen.PMIN) <= prec(gen.PG) <= prec(gen.PMAX):
                 result.append(f"gen#{n}: generator at bus '{gen.GEN_BUS:.0f}' real power PG={gen.PG:.1f} MW outside power dispatch limits ({gen.PMIN:.1f},{gen.PMAX:.1f}) MW")
 
             # check reactive power
-            if not gen.QMIN <= gen.QG <= gen.QMAX:
+            if not prec(gen.QMIN) <= prec(gen.QG) <= prec(gen.QMAX):
                 result.append(f"gen#{n}: generator at bus '{gen.GEN_BUS:.0f}' reactive power QG={gen.QG:.1f} MVAr outside power dispatch limits ({gen.QMIN:.1f},{gen.QMAX:.1f}) MVAr")
 
         # check DC lines
@@ -1136,15 +1144,15 @@ def {self.name}():
             for n,dcline in self.get_data("dcline").iterrows():
 
                 # check real power limits
-                if dcline.PF > dcline.PMAX:
+                if prec(dcline.PF) > prec(dcline.PMAX):
                     result.append(f"dcline#{n}: DC line real power {dcline.PF:.1f} MW exceeds maximum {dcline.PMAX:.1f} MW")
-                if dcline.PF < dcline.PMIN:
+                if prec(dcline.PF) < prec(dcline.PMIN):
                     result.append(f"dcline#{n}: DC line real power {dcline.PF:.1f} MW below minimum {dcline.PMIN:.1f} MW")
 
                 # check reactive power limits
-                if not dcline.QMINF <= dcline.QF <= dcline.QMAXF:
+                if not prec(dcline.QMINF) <= prec(dcline.QF) <= prec(dcline.QMAXF):
                     result.append(f"dcline#{n}: DC line reactive power {dcline.QF:.1f} MVAr at 'from' end outside limits ({dcline.QMINF},{dcline.QMAXF}) MVAr")
-                if not dcline.QMINT <= dcline.QT <= dcline.QMAXT:
+                if not prec(dcline.QMINT) <= prec(dcline.QT) <= prec(dcline.QMAXT):
                     result.append(f"dcline#{n}: DC line reactive power {dcline.QT:.1f} MVAr at 'to' end outside limits ({dcline.QMINT},{dcline.QMAXT}) MVAr")
 
         return result

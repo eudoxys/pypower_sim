@@ -2,10 +2,12 @@
 
 import io
 import json
+import datetime as dt
 import pytz
+from typing import Any
+
 import numpy as np
 import pandas as pd
-from typing import Any
 
 # pylink: disable=invalid-name
 class PypowerModelEncoder(json.JSONEncoder):
@@ -46,6 +48,9 @@ class PypowerModelEncoder(json.JSONEncoder):
 
             return {"type": "bytes", "data": " ".join(f"{x:x}" for x in o)}
 
+        if isinstance(o,dt.datetime):
+            return {"type": "datetime", "data": o.isoformat()}
+
         if isinstance(o, np.ndarray):
 
             def tojson(x):
@@ -70,7 +75,7 @@ class PypowerModelEncoder(json.JSONEncoder):
                     "index": {
                         "name": list(o.index.names),
                         "dtype": str(o.index.dtype),
-                        "keys": o.index.values.tolist(),
+                        "keys": [x.item().isoformat() for x in o.index.values],
                         },
                     "rows":o.values.tolist(),
                     },
@@ -82,7 +87,7 @@ class PypowerModelEncoder(json.JSONEncoder):
 
         if isinstance(o,pd.Timestamp):
 
-            return o.strftime("%Y-%m-%d %H:%M:%S %Z")
+            return {"type": "timestamp", "data": o.isoformat()}
 
         if isinstance(o,pd.Index):
 
@@ -169,7 +174,7 @@ def PypowerModelDecoder(data) -> Any:
                     assert "dtype" in frame["index"], f"dataframe {data=} missing frame 'dtype'"
                     assert "name" in frame["index"], f"dataframe {data=} missing frame 'name'"
                     ndx = frame["index"]
-                    assert ndx["dtype"] == "datetime64[ns, UTC]", \
+                    assert ndx["dtype"].startswith("datetime64"), \
                         f"dataframe {data=} index is not datetime64[ns, UTC]"
                     df = pd.DataFrame(
                         data = frame["rows"],
@@ -177,6 +182,14 @@ def PypowerModelDecoder(data) -> Any:
                         )
                     df.index.names = frame["index"]["name"]
                     return df
+
+                case "timestamp":
+
+                    return pd.Timestamp(data["data"])
+
+                case "datetime":
+
+                    return dt.datetime.fromisoformat(data["data"])
 
                 case "bytes":
 

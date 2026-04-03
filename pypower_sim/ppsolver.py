@@ -467,7 +467,7 @@ class PPSolver:
                 solvers ->>-model:OPF result
 
                 model ->>+solvers:OPF result
-                note over solvers: Call runpf()
+                note over solvers: Call runpf()Ju
                 solvers ->>-model:PF result
 
                 note over model: Save errors
@@ -505,7 +505,6 @@ class PPSolver:
 
         - `list[str]`: Error messages (when stop_on_fail is False)
         """
-
         assert progress is None or callable(progress), \
             "progress must be callable or None"
         assert call_on_fail is None or callable(call_on_fail), \
@@ -526,6 +525,14 @@ class PPSolver:
         topf = 0.0
         tpf = 0.0
 
+        if callable(progress) and progress(
+                timestamp=trange[0].tz_convert("UTC"),
+                event="initialization",
+                errors=self.model.errors,
+                progress=0.0,
+                ):
+            return None
+
         # start recorders
         for file,recorder in self.model.recorders.items():
             recorder["fh"] = open(file,"w",encoding="utf-8")
@@ -541,9 +548,12 @@ class PPSolver:
         for t in (x.tz_convert("UTC") for x in trange):
 
             # setup time and progress/stop callback
-            ts = t.strftime("%Y-%m-%d %H:%M:%S %Z")
-            if callable(progress) and progress(f"""{ts} ({len(self.model.errors)
-                    if self.model.errors else 'no'} errors)"""):
+            if callable(progress) and progress(
+                    timestamp=t,
+                    event="timestep",
+                    errors=self.model.errors,
+                    progress=(t-trange[0])/(trange[-1]-trange[0]),
+                    ):
                 return None
 
             # update inputs
@@ -556,6 +566,7 @@ class PPSolver:
             # solve OPF and check result
             status,result = self.solve_opf(use_acopf,with_result=True)
             if status is not True:
+                ts = t.strftime("%Y-%m-%d %H:%M:%S %Z")
                 failed = f"OPF failed at {ts}"
                 self.model.errors.append(failed)
                 if call_on_fail:
@@ -567,6 +578,7 @@ class PPSolver:
             # solver powerflow and check result
             status,result = self.solve_pf(with_result=True)
             if status is not True:
+                ts = t.strftime("%Y-%m-%d %H:%M:%S %Z")
                 failed = f"PF failed at {ts}"
                 self.model.errors.append(failed)
                 if call_on_fail:

@@ -78,3 +78,9 @@ def case9Q():
     ])
 
     return ppc
+
+if __name__ == "__main__":
+
+    from check_case import check_case
+    name,case = [(x,eval(x)) for x in globals() if x.startswith("case")][0]
+    check_case(name,case())

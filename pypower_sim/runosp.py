@@ -317,8 +317,8 @@ def runosp(
 
     # constraints
     constraints = [
-        B @ x == g + c - PD * ( 1 + config.load_margin ),  # KCL/KVL real power laws
-        B @ y == h + d - QD * ( 1 + config.load_margin ),  # KCL/KVL reactive power laws
+        B @ x - g - c + PD * ( 1 + config.load_margin ) == 0,  # KCL/KVL real power laws
+        B @ y - h - d + QD * ( 1 + config.load_margin ) == 0,  # KCL/KVL reactive power laws
 
         x[reference_bus] == np.angle(config.reference_voltage),  # swing bus(ses) voltage angle value(s)
         y[reference_bus] == np.abs(config.reference_voltage),  # swing bus(ses) voltage magnitude value(s)
@@ -470,6 +470,10 @@ if __name__ == "__main__":
                     warnings.simplefilter("always")
                     status,result = getattr(solver,call)(with_result=True)
                 report = "ok"
+                violations = model.get_violations()
+                if violations:
+                    report = "violations"
+                    reportlist.extend([(case,label,"violation",x) for x in violations])
                 if recording:
                     report = "warning"
                     for msg in recording:
