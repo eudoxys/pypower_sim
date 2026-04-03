@@ -101,7 +101,7 @@ for test in [x for x in dir(cases) if x.startswith("test_")]:
         if DEBUG:
             raise
 
-        print("FAILED:",err)
+        print(f"  {test} FAILED:",err)
         n_failed += 1
 
 print(n_tests,"completed.",n_failed,"failures")
