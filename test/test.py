@@ -16,13 +16,17 @@ n_failed = 0
 DEBUG = "--debug" in sys.argv or __name__ == "__main__"
 
 start = dt.datetime(2020,7,31,17,0,0,0,pytz.UTC)
-end = dt.datetime(2020,8,1,16,0,0,0,pytz.UTC)
+end = dt.datetime(2020,7,31,23,0,0,0,pytz.UTC)
 
 for test in [x for x in dir(cases) if x.startswith("test_")]:
 
     print(f"Running {test} from {start} to {end}...",flush=True)
 
     n_tests += 1
+    def add_fail(x):
+        global n_failed
+        n_failed += 1
+        return x
 
     try:
         
@@ -45,56 +49,60 @@ for test in [x for x in dir(cases) if x.startswith("test_")]:
             print("  Running OSP...","ok" if solver.solve_osp() else "Powerflow failed",flush=True)
             print("  Checking AC OPF...","ok" if solver.solve_opf(use_acopf=True) else "AC OPF failed",flush=True)
             print("  Checking powerflow...","ok" if solver.solve_pf() else "Powerflow failed",flush=True)
-            print("  Checking violations...",len(test_model.get_violations()),"found",flush=True)
+            violations = len(test_model.get_violations())
+            print("  Checking violations...","on" if not violations else add_fail(f"ERROR: {violations} violations remain after OSP"),flush=True)
+            if not violations:
+                print("  Generating plots",end="...",flush=True)
+                plots.voltage().savefig(f"{test}_voltage_initial.png")
+                print("ok")
 
-        print("  Generating plots",end="...",flush=True)
-        plots.voltage().savefig(f"{test}_voltage_initial.png")
-        print("ok")
+                print("  Running JSON round robin",end="...",flush=True)
+                test_model.save(f"{test}_model.json",indent=1)
+                test_model.load(f"{test}_model.json")
+                print("ok")
 
-        print("  Running JSON round robin",end="...",flush=True)
-        test_model.save(f"{test}_model.json",indent=1)
-        test_model.load(f"{test}_model.json")
-        print("ok")
+                print("  Loading timeseries inputs",end="...",flush=True)
+                tapes = PPData(test_model)
+                tapes.set_input("bus","PD",f"load.csv",scale=10)
+                tapes.set_input("bus","QD",f"load.csv",scale=1)
+                print("ok")
 
-        print("  Loading timeseries inputs",end="...",flush=True)
-        tapes = PPData(test_model)
-        tapes.set_input("bus","PD",f"load.csv",scale=10)
-        tapes.set_input("bus","QD",f"load.csv",scale=1)
-        print("ok")
+                print("  Configuring timeseries outputs",end="...",flush=True)
+                tapes.set_output("bus","VM",f"{test}_bus_vm.csv",formatting=".3f")
+                tapes.set_output("bus","VA",f"{test}_bus_va.csv",formatting=".4f")
+                tapes.set_output("bus","PD",f"{test}_bus_pd.csv",formatting=".4f")
+                tapes.set_output("bus","QD",f"{test}_bus_qd.csv",formatting=".4f")
+                tapes.set_recorder(f"{test}_cost.csv","cost",["cost"],
+                    scale=test_model.case['baseMVA'],formatting=".2f")
+                print("ok")
 
-        print("  Configuring timeseries outputs",end="...",flush=True)
-        tapes.set_output("bus","VM",f"{test}_bus_vm.csv",formatting=".3f")
-        tapes.set_output("bus","VA",f"{test}_bus_va.csv",formatting=".4f")
-        tapes.set_output("bus","PD",f"{test}_bus_pd.csv",formatting=".4f")
-        tapes.set_output("bus","QD",f"{test}_bus_qd.csv",formatting=".4f")
-        tapes.set_recorder(f"{test}_cost.csv","cost",["cost"],
-            scale=test_model.case['baseMVA'],formatting=".2f")
-        print("ok")
+                test_solver = PPSolver(test_model)
+                print("  Running timeseries simulation",end="...",flush=True)
+                print("  ok" if test_solver.run_timeseries(
+                    start=start,
+                    end=end,
+                    freq="1h",
+                    progress=lambda **kwargs: print(end=".",flush=True),
+                    call_on_fail=add_fail
+                    ) is None else f"FAILED, error(s):\n{'\n'.join([f'    {n+1:3d}. {x}' for n,x in enumerate(test_model.errors)])}",flush=True)
 
-        test_solver = PPSolver(test_model)
-        print("  Running timeseries simulation",end="...",flush=True)
-        print("  ok" if test_solver.run_timeseries(
-            start=start,
-            end=end,
-            freq="1h",
-            progress=lambda **kwargs: print(end=".",flush=True),
-            ) is None else "original timeseries simulation failed",flush=True)
+                print("  Generating plots",end="...",flush=True)
+                plots.voltage().savefig(f"{test}_voltage_final.png")
+                print("ok")
 
-        print("  Generating plots",end="...",flush=True)
-        plots.voltage().savefig(f"{test}_voltage_final.png")
-        print("ok")
+                print("  Running JSON round robin",end="...",flush=True)
+                test_model.save(f"{test}_model.json",indent=1)
+                test_model.load(f"{test}_model.json")
+                print("ok" if solver.solve_pf() else "powerflow failed after load()",flush=True)
 
-        print("  Running JSON round robin",end="...",flush=True)
-        test_model.save(f"{test}_model.json",indent=1)
-        test_model.load(f"{test}_model.json")
-        print("ok" if solver.solve_pf() else "powerflow failed after load()",flush=True)
+                if "gis" in test_model.case:
+                    print("  Saving GIS data",end="...",flush=True)
+                    test_model.get_data("gis").to_csv(f"{test}_gis.csv",index=False,header=True)
+                    print("ok",flush=True)
 
-        if "gis" in test_model.case:
-            print("  Saving GIS data",end="...",flush=True)
-            test_model.get_data("gis").to_csv(f"{test}_gis.csv",index=False,header=True)
-            print("ok",flush=True)
-
-        print(f"  {test} OK")
+                print(f"  {test} OK")
+            else:
+                print(f"  {test} FAILED")
 
     except Exception as err:
         

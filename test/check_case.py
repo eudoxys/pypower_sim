@@ -48,12 +48,12 @@ def check_case(name,case):
         print("ERROR:",err,file=sys.stderr,flush=True)
 
     try:
-        assert solver.solve_pf(), "Optimal PF failed"
+        assert solver.solve_pf(), "Initial optimized PF failed"
         if print_model:
             print("",f"****{'*'*50}****",f"*** {'INITIAL PF':^50s} ***",f"****{'*'*50}****","",sep="\n",flush=True)
             model.print()
         else:
-            print("Optimal PF ok",flush=True)
+            print("Initial optimized PF ok",flush=True)
 
     except AssertionError as err:
         print("ERROR:",err,file=sys.stderr,flush=True)
@@ -67,20 +67,27 @@ def check_case(name,case):
         status,result = solver.solve_osp(options=osp_options,with_result=True)
         if status:
 
+            print("OSP solution ok")
             for u,v in {"Generators":"MW","Capacitors":"MVAr","Condensers":"MVAr"}.items():
-                print("",f"New {u}","--------------------",*[f"  {n:4d}. {x:8.3f} {v}" for n,x in enumerate(result[u.lower()].tolist())],sep="\n  ")
-                print("  --------------------")
-                print(f"    Total {round(sum(result[u.lower()]),2):8.3f} {v}")
+                if not result[u.lower()] is None:
+                    print("",f"New {u}","--------------------",*[f"  {n:4d}. {x:8.3f} {v}" for n,x in enumerate(result[u.lower()].tolist()) if round(x,3) > 0],sep="\n  ")
+                    print("  --------------------")
+                    print(f"    Total {round(sum(result[u.lower()]),2):8.3f} {v}")
+                else:
+                    print(f"  No new {u.lower()}")
 
-            print("",f"Bus Voltages","--------------------",*[f"  {n:4d}. {np.abs(x):8.3f} pu.kV @ {np.angle(x)*180/np.pi:8.3f} deg" for n,x in enumerate(result["voltages"].tolist())],sep="\n  ")
-            print("  --------------------")
+            if not result["voltages"] is None:
+                print("",f"Bus Voltages","--------------------",*[f"  {n:4d}. {np.abs(x):8.3f} pu.kV @ {np.angle(x)*180/np.pi:8.3f} deg" for n,x in enumerate(result["voltages"].tolist())],sep="\n  ")
+                print("  --------------------")
+            else:
+                print("  No voltage solution")
 
             if print_model:
                 print("",f"****{'*'*50}****",f"*** {'AFTER OSP':^50s} ***",f"****{'*'*50}****","",sep="\n",flush=True)
                 model.print()
 
             try:
-                assert solver.solve_pf(), "Sized PF failed"
+                assert solver.solve_pf(), "Resized PF failed"
                 if print_model:
                     print("",f"****{'*'*50}****",f"*** {'AFTER PF':^50s} ***",f"****{'*'*50}****","",sep="\n",flush=True)
                     model.print()
@@ -95,12 +102,12 @@ def check_case(name,case):
 
 
             try:
-                assert solver.solve_opf(), "Sized OPF failed"
+                assert solver.solve_opf(), "Resized OPF failed"
                 if print_model:
                     print("",f"****{'*'*50}****",f"*** {'AFTER OPF':^50s} ***",f"****{'*'*50}****","",sep="\n",flush=True)
                     model.print()
                 else:
-                    print("Sized OPF ok",flush=True)
+                    print("Resized OPF ok",flush=True)
             except AssertionError as err:
                 print("ERROR:",err,file=sys.stderr,flush=True)
 
@@ -124,4 +131,4 @@ def check_case(name,case):
 
         else:
 
-            print("OSP solution failed")
+            print("OSP solution failed:",result["error"])

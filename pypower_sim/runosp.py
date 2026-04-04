@@ -7,7 +7,7 @@ maximum load.
 
 For an $N$-bus and $M$-line network the problem is stated as 
 
-$\underset{x,y,g,h,c,d}{\min} (c-\Re \hat{G}) \lfloor_0 ~ C_s + c~G_g + \frac12(C_c-C_d)~d + \frac12(C_c+C_d)~|d| + C_l ~ f + 10^9 ~ e$
+$\underset{x,y,g,h,c,d}{\min} (c-\Re \hat{G}) \lfloor_0 ~ C_s + c~G_g + \frac12(C_c-C_d)~d + \frac12(C_c+C_d)~|d| + C_l ~ f + C_m ~ e$
 
 subject to
 
@@ -48,8 +48,9 @@ where the variable
   provide sufficient reactive power to minimize line losses and meet the load
   plus the load margin,
 
-- $e \in \mathbb {R}^N$ is the power generation constraint flexibility needed
-  to make the problem feasible when it otherwise infeasible,
+- $e \in \mathbb {R}^N$ is the power generation constraint softening needed
+  to make the problem feasible when it otherwise infeasible---set to 
+  zero when the $C_m$ is not specified,
 
 - $f \in \mathbb {R}^M$ is the adding line rating needed to make the powerflow
   feasible given the load, including the load margin,
@@ -100,6 +101,9 @@ and the cost
 - $C_g \in \mathbb{R}$ is the cost of adding generators in $/MW,
 
 - $C_l \in \mathbb{R}$ is the cost of upgrading a line rating in $/MW,
+
+- $C_m \in \mathbb{R}$ is the generation constraint softening cost if any in
+  $/MW---$e=0$ when $C_m$ is not specified,
 
 - $C_s \in \mathbb{R}$ is the cost of adding substations in $/MVA,
 
@@ -173,11 +177,11 @@ class OspConfig:
         self.powerline_limit : float|list[float] = None
         """Powerline rating upgrade limit (in MW, defaults to `None`)"""
 
-        self.generation_constraint_cost : float = None
+        self.generation_constraint_cost : float = 1e9
         """Relaxed generation constraint cost (defaults to 1e9 $/MW, `None` for hard constraints)"""
 
         self.cvx_solver = {
-            "solver": "CLARABEL",
+            "solver": "HIGHS",
             "verbose": False,
             "canon_backend": "SCIPY",
         }
@@ -277,9 +281,9 @@ def runosp(
     c = cp.Variable(N,name='c') # real power addition needed
     d = cp.Variable(N,name='d') # reactive power addition needed
     if config.generation_constraint_cost is not None:
-        e = cp.Variable(N,name='e') # power balance relaxation
+        e = cp.Variable(N,name='e') # generation constraints softening
     else:
-        e = 0
+        e = 0 # no softening of generation constraints
     f = cp.Variable(M,name='f') # line flow capacity expansion
 
     B = G.imag
@@ -365,7 +369,7 @@ def runosp(
         constraints.append(cp.abs(I @ x) <= F) # line flow limits
 
     if config.generation_constraint_cost:
-        constraint.append(e >= 0) # power generation constraint relaxation can only be positive
+        constraints.append(e >= 0) # power generation constraint relaxation can only be positive
 
 
     problem = cp.Problem(cp.Minimize(cost), constraints)
@@ -383,11 +387,13 @@ def runosp(
 
         problem.solve(**config.cvx_solver)        
         value = problem.value
-        status = problem.value is not None
-        generators = c.value
-        if d.value is None:
+        if value is None:
+            error = problem.status
+        elif np.isinf(value):
             error = problem.status
         else:
+            status = True
+            generators = np.clip(c.value,a_min=0,a_max=None)
             capacitors = np.clip(d.value,a_min=0,a_max=None)
             condensers = np.clip(-d.value,a_min=0,a_max=None)
             voltages = y.value * np.exp(x.value*1j)
@@ -443,8 +449,8 @@ if __name__ == "__main__":
                 "Initial OPF": "solve_opf",
                 "Optimal PF": "solve_pf",
                 "Optimal Sizing":"solve_osp",
-                "Sized OPF":"solve_opf",
-                "Sized PF":"solve_pf",
+                "Resized OPF":"solve_opf",
+                "Resized PF":"solve_pf",
                 }
     print(f"{'Case':^20s}",*[f" {x} " for x in testcalls],f"{'Time (s)':^8s}",f"{'Newgen (%MW)':^14s}",f"{'Savings (%MW)':^14s}")
     print("-"*20,*["-"*(len(x)+2) for x in testcalls],"--------","--------------","--------------")
@@ -470,10 +476,11 @@ if __name__ == "__main__":
                     warnings.simplefilter("always")
                     status,result = getattr(solver,call)(with_result=True)
                 report = "ok"
-                violations = model.get_violations()
-                if violations:
-                    report = "violations"
-                    reportlist.extend([(case,label,"violation",x) for x in violations])
+                if call == "solve_pf":
+                    violations = model.get_violations(rel_err=0.01)
+                    if violations:
+                        report = "violations"
+                        reportlist.extend([(case,label,"violation",x) for x in violations])
                 if recording:
                     report = "warning"
                     for msg in recording:
