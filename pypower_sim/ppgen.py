@@ -106,7 +106,7 @@ class PPGen:
         # verify source and cache specs
         assert isinstance(source,str), "source is not a valid string"
         assert isinstance(cache,str), "cache is not a valid string"
-        
+
         self.source=source
         """Source data frame"""
 
