@@ -3,9 +3,9 @@
 import io
 import json
 import datetime as dt
-import pytz
 from typing import Any
 
+import pytz
 import numpy as np
 import pandas as pd
 
@@ -58,9 +58,12 @@ class PypowerModelEncoder(json.JSONEncoder):
                     return [tojson(y) for y in x]
                 if isinstance(x,float) and np.isnan(x):
                     return None
+                # pylint: disable=isinstance-second-argument-not-valid-type
                 if isinstance(x,(int,float,str,bool,None)):
                     return x
-                raise Exception(f"array {o=} cannot be converted to JSON")
+                # pylint: enable=isinstance-second-argument-not-valid-type
+                raise ValueError(f"array member type {repr(type(o))} value {repr(o)} "
+                    "cannot be converted to JSON")
             return {
                 "type": "array",
                 "dtype": str(o.dtype),
@@ -118,7 +121,7 @@ def PypowerModelDecoder(data) -> Any:
     - `varies`: `pypower_sim` object
     """
 
-    # pylint: disable=too-many-return-statements
+    # pylint: disable=too-many-return-statements,too-many-branches
 
     if isinstance(data,dict):
 
@@ -156,14 +159,12 @@ def PypowerModelDecoder(data) -> Any:
                             try:
                                 ix = int(x)
                                 fx = float(x)
-                                if ix == fx:
-                                    return ix
-                                else:
-                                    return fx
-                            except:
+                                return ix if ix == fx else fx
+                            except ValueError:
                                 return str(x)
                         return np.array(fromlist(data["data"]))
-                    assert dtype in ["int64","float64","datetime64[ns, UTC]"], f"array {data=} 'dtype' is not valid"
+                    assert dtype in ["int64","float64","datetime64[ns, UTC]"], \
+                        f"array {data=} 'dtype' is not valid"
                     return np.array(data["data"],dtype=getattr(np,dtype))
 
                 case "dataframe":
