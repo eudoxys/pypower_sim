@@ -12,7 +12,8 @@ Usage
     print(f"{a==10.01=}")
 """
 
-class fuzzy(float):
+class Fuzzy(float):
+    """Fuzzy float implementation"""
 
     abs_err = None
     """Absolute error tolerance during comparisons"""
@@ -74,19 +75,19 @@ class fuzzy(float):
 
 
 if __name__ == '__main__':
-    
-    a = fuzzy(10)
+
+    # Test fuzzy math implementation
+    a = Fuzzy(10)
     rows = [(None,None),(0.01,None),(None,0.001),(0.01,0.001)]
     cols = [9.98,9.985,9.99,9.995,10.0,10.005,10.01,10.015,10.02]
-    # print("abs_err rel_err"," ".join([f"{x:^7.2f}" for x in cols]))
-    print(*[f"{x:^7s}" for x in ["abs_err","rel_err","a","b","a==b","a<b","a<=b","a>=b","a>b","a!=b"]])
-    for fuzzy.abs_err,fuzzy.rel_err in rows:
-        # print(f"\n{fuzzy.abs_err=}, {fuzzy.rel_err=}")
+    hdgs = ["abs_err","rel_err","a","b","a==b","a<b","a<=b","a>=b","a>b","a!=b"]
+    print(*[f"{x:^7s}" for x in hdgs])
+    for Fuzzy.abs_err,Fuzzy.rel_err in rows:
         print(*["------- "*10])
-        x = f"{'-':s}" if fuzzy.abs_err is None else f"{fuzzy.abs_err:.3f}"
-        y = f"{'-':s}" if fuzzy.rel_err is None else f"{fuzzy.rel_err:.3f}"
+        c = f"{'-':s}" if Fuzzy.abs_err is None else f"{Fuzzy.abs_err:.3f}"
+        d = f"{'-':s}" if Fuzzy.rel_err is None else f"{Fuzzy.rel_err:.3f}"
         for b in cols:
-            print(f"{x:^7s} {y:^7s}",end=" ")
+            print(f"{c:^7s} {d:^7s}",end=" ")
             print(f"{a:7.3f}",f"{b:7.3f}",end=" ")
             print(f"{a==b:^7d}",end=" ")
             print(f"{a<b:^7d}",end=" ")
@@ -94,12 +95,5 @@ if __name__ == '__main__':
             print(f"{a>=b:^7d}",end=" ")
             print(f"{a>b:^7d}",end=" ")
             print(f"{a!=b:^7d}",end=" ")
-            # print("")
-            # print(f"{  a  ==  b  =}".replace(" a ",str(a)).replace(" b ",str(b)))
-            # print(f"{  a  !=  b  =}".replace(" a ",str(a)).replace(" b ",str(b)))
-            # print(f"{  a  >   b  =}".replace(" a ",str(a)).replace(" b ",str(b)))
-            # print(f"{  a  >=  b  =}".replace(" a ",str(a)).replace(" b ",str(b)))
-            # print(f"{  a  <=  b  =}".replace(" a ",str(a)).replace(" b ",str(b)))
-            # print(f"{  a  <   b  =}".replace(" a ",str(a)).replace(" b ",str(b)))
             print()
     print(*["------- "*10])

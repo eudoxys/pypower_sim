@@ -76,7 +76,7 @@ from pypower_sim.ppgis import idx_gis
 from pypower_sim.ppgraph import PPGraph
 from pypower_sim.ppjson import PypowerModelEncoder, PypowerModelDecoder
 from pypower_sim.kml import KML
-from pypower_sim._fuzzy import fuzzy
+from pypower_sim._fuzzy import Fuzzy
 
 idx_dclinecost = idx_gencost
 
@@ -1108,8 +1108,8 @@ def {self.name if not name else name}():
 
         dict[]
         """
-        fuzzy.abs_err = abs_err
-        fuzzy.rel_err = rel_err
+        Fuzzy.abs_err = abs_err
+        Fuzzy.rel_err = rel_err
 
         result = []
 
@@ -1117,7 +1117,7 @@ def {self.name if not name else name}():
         for n,bus in self.get_data("bus").iterrows():
             
             # check bus voltage magnitudes
-            if not fuzzy(bus.VMIN) <= bus.VM and fuzzy(bus.VM) <= bus.VMAX:
+            if not Fuzzy(bus.VMIN) <= bus.VM and Fuzzy(bus.VM) <= bus.VMAX:
                 result.append(f"bus#{n}: bus '{bus.BUS_I:.0f}' VM={bus.VM:.3f} puV outside limits ({bus.VMIN:.3f},{bus.VMAX:.3f}) puV")
 
         # check branches
@@ -1131,7 +1131,7 @@ def {self.name if not name else name}():
                 continue
             flow = max(abs(complex(branch.PF,branch.QF)),abs(complex(branch.PT,branch.QT)))
             rated = 0.0 if branch.BR_STATUS == 0 else max(branch.RATE_A,branch.RATE_B,branch.RATE_C) 
-            if rated > 0 and fuzzy(flow) > rated:
+            if rated > 0 and Fuzzy(flow) > rated:
                 result.append(f"branch#{n}: branch from bus '{branch.F_BUS:.0f}' to '{branch.T_BUS:.0f}' apparent power flow {flow:.3f} MVA exceeds maximum rating {rated:.3f} MW")
 
         # check generators
@@ -1142,11 +1142,11 @@ def {self.name if not name else name}():
                 continue
 
             # check real power
-            if gen.PG > 0 and gen.PMAX > gen.PMIN and not fuzzy(gen.PMIN) <= gen.PG and not fuzzy(gen.PG) <= gen.PMAX:
+            if gen.PG > 0 and gen.PMAX > gen.PMIN and not Fuzzy(gen.PMIN) <= gen.PG and not Fuzzy(gen.PG) <= gen.PMAX:
                 result.append(f"gen#{n}: generator at bus '{gen.GEN_BUS:.0f}' real power PG={gen.PG:.3f} MW outside power dispatch limits ({gen.PMIN:.3f},{gen.PMAX:.3f}) MW")
 
             # check reactive power
-            if gen.QG != 0 and gen.QMAX < gen.QMIN and not fuzzy(gen.QMIN) <= gen.QG and fuzzy(gen.QG) <= gen.QMAX:
+            if gen.QG != 0 and gen.QMAX < gen.QMIN and not Fuzzy(gen.QMIN) <= gen.QG and Fuzzy(gen.QG) <= gen.QMAX:
                 result.append(f"gen#{n}: generator at bus '{gen.GEN_BUS:.0f}' reactive power QG={gen.QG:.3f} MVAr outside power dispatch limits ({gen.QMIN:.1f},{gen.QMAX:.3f}) MVAr")
 
         # check DC lines
@@ -1157,15 +1157,15 @@ def {self.name if not name else name}():
                     continue
 
                 # check real power limits
-                if fuzzy(dcline.PF) > dcline.PMAX:
+                if Fuzzy(dcline.PF) > dcline.PMAX:
                     result.append(f"dcline#{n}: DC line real power {dcline.PF:.3f} MW exceeds maximum {dcline.PMAX:.3f} MW")
-                if fuzzy(dcline.PF) < dcline.PMIN:
+                if Fuzzy(dcline.PF) < dcline.PMIN:
                     result.append(f"dcline#{n}: DC line real power {dcline.PF:.3f} MW below minimum {dcline.PMIN:.3f} MW")
 
                 # check reactive power limits
-                if not fuzzy(dcline.QMINF) <= dcline.QF and fuzzy(dcline.QF) <= dcline.QMAXF:
+                if not Fuzzy(dcline.QMINF) <= dcline.QF and Fuzzy(dcline.QF) <= dcline.QMAXF:
                     result.append(f"dcline#{n}: DC line reactive power {dcline.QF:.3f} MVAr at 'from' end outside limits ({dcline.QMINF:.3f},{dcline.QMAXF:.3f}) MVAr")
-                if not fuzzy(dcline.QMINT) <= dcline.QT and fuzzy(dcline.QT) <= dcline.QMAXT:
+                if not Fuzzy(dcline.QMINT) <= dcline.QT and Fuzzy(dcline.QT) <= dcline.QMAXT:
                     result.append(f"dcline#{n}: DC line reactive power {dcline.QT:.3f} MVAr at 'to' end outside limits ({dcline.QMINT:.3f},{dcline.QMAXT:.3f}) MVAr")
 
         return result
