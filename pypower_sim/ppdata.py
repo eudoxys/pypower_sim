@@ -79,7 +79,7 @@ class PPData:
         - `pypower_sim.ppmodel.PPModel.outputs`
         - `pypower_sim.ppmodel.PPModel.recorders`
         """
-        
+
         self.model = model
         """`pypower_sim.ppmodel.PPModel` object"""
 
@@ -137,7 +137,7 @@ class PPData:
             }
 
     def set_player(self,
-        # pylint: disable=too-many-arguments,too-many-position-arguments
+        # pylint: disable=too-many-arguments,too-many-positional-arguments
         name:str,
         columns:dict[str:str],
         file:str,
@@ -158,14 +158,18 @@ class PPData:
 
         - `offset`: offset to apply to the scaled data
         """
-        assert name in self.model.standard_idx,f"{name=} is not valid"
+        assert name in self.model.standard_idx,\
+            f"{name=} is not valid"
         notfound = set(columns.values) - set(self.model.get_header(name))
-        assert notfound == set() , f"columns {notfound} is not found in {name} data"
-        assert (name,list(columns)) not in self.model.inputs, f"input({name=},{list(columns)=}) already defined"
+        assert notfound == set() , \
+            f"columns {notfound} is not found in {name} data"
+        assert (name,list(columns)) not in self.model.inputs, \
+            f"input({name=},{list(columns)=}) already defined"
         if file is None:
             del self.model.inputs[name]
         else:
-            assert os.path.exists(file), f"{file=} not found"
+            assert os.path.exists(file), \
+                f"{file=} not found"
             data = pd.read_csv(file,index_col=[0],parse_dates=[0]) * scale + offset
             data.index.name = "datetime"
 
@@ -177,7 +181,7 @@ class PPData:
                     }
 
             # set up input
-            self.model.inputs[(name,column)] = {
+            self.model.inputs[(name,columns)] = {
                 "file": file,
                 "data": data,
                 "mapping": mapping,
