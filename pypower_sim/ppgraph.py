@@ -184,7 +184,7 @@ class PPGraph:
                 return [bus_index(y) for y in x]
             return self.bus["BUS_I"].astype(int).tolist().index(int(x))
         self.refbus = bus_index(self.bus[self.bus.BUS_TYPE==3].BUS_I.values.tolist())
-        assert len(self.refbus) == 1, f"one and only one reference bus may be defined"
+        assert len(self.refbus) == 1, "one and only one reference bus may be defined"
         self.refbus = self.refbus[0]
 
         # branch data
@@ -195,7 +195,8 @@ class PPGraph:
         self.M = len(self.branch)
         assert self.M > 0, "no branch data"
 
-        # per-unit values 
+        # per-unit values
+        # pylint: disable=invalid-name
         self.puS = self.model.case["baseMVA"]
         self.puV = self.bus.loc[self.refbus].BASE_KV
         if self.puS == 0:
@@ -216,6 +217,7 @@ class PPGraph:
         self.S = None # spectral analysis results
         self.W = None # weighted incidence matrix
         self.Z = None # impedance matrix
+        # pylint: enable=invalid-name
 
     def degree(self,
         refresh:bool=False,
@@ -365,6 +367,7 @@ class PPGraph:
                 dtype=np.complex64 if weighted else np.float64)
         fbus,tbus = zip(*self.branch_ij)
 
+        # pylint: disable=invalid-name
         if weighted:
 
             Z = np.array([(1/x if np.abs(x)!=0 else 0) for x in self.impedance()])
@@ -377,6 +380,7 @@ class PPGraph:
         Z = np.ones(self.M)
         self.B = (sp.csr_matrix((Z,[range(self.M),tbus]),shape=(self.M,self.N)) -\
                   sp.csr_matrix((Z,[range(self.M),fbus]),shape=(self.M,self.N))).T
+        # pylint: enable=invalid-name
 
         return self.B
 
