@@ -19,6 +19,8 @@ The following methods are used to create KML files:
 - [Google Earth KML Documentation](https://developers.google.com/kml/documentation)
 """
 
+import os
+
 class KML:
     """KML generator class"""
 
@@ -40,7 +42,7 @@ class KML:
 
         self.name = name if name else os.path.splitext(os.path.basename(self.kmlfile))[0]
         """KML name (if different from base name of `pypower_sim.kml.KML.kmlfile`)"""
-        
+
         self.line = {}
         """Line entity table (see `pypower_sim.kml.KML.add_line`)"""
 
@@ -129,7 +131,7 @@ class KML:
 
         - `parent`: parent folder name
         """
-        self.folder[name] = kwargs
+        self.folders[name] = kwargs
 
     def close(self,write=True):
         """Close KML file
