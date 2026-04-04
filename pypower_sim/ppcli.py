@@ -22,6 +22,7 @@ PyPOWER Simulation CLI
 
 """
 
+import os
 import argparse
 import importlib
 
@@ -29,10 +30,10 @@ from pypower_sim.ppmodel import PPModel
 
 class PPCLI(argparse.ArgumentParser):
     """Main CLI implementation"""
-    
+
     E_OK = 0
     """Exit code on success"""
-    
+
     E_SYNTAX = 1
     """Exit code on syntax error"""
 
@@ -54,6 +55,9 @@ class PPCLI(argparse.ArgumentParser):
 
         self.model = None
         """`pypower_sim.ppmodel.PPModel` object"""
+
+        self.command = None
+        """PyPOWER command"""
 
         # required arguments
         self.add_argument("filename",
@@ -89,7 +93,8 @@ class PPCLI(argparse.ArgumentParser):
 
             case '_':
 
-                raise ValueError(f"{command=} is invalid")
+                self.exitcode = self.E_SYNTAX
+                raise ValueError(f"{self.command=} is invalid")
 
-        self.exitcode = E_OK
+        self.exitcode = self.E_OK
         """Exit code (see `pypower_sim.ppcli.PPCLI` exit codes `E_*`)"""
