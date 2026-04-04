@@ -1,10 +1,8 @@
 """PyPOWER Simulator GIS data manager"""
 
 from typing import TypeVar
-import warnings
 import pandas as pd
 from geohash import geohash
-from pypower import idx_bus
 
 class idx_gis:
     """Provide column index values for GIS data"""
@@ -53,7 +51,8 @@ class PPGIS:
 
     - `MODEL`: updates the model `gis` table from the data provided.
     """
-    
+    # pylint: disable=too-few-public-methods
+
     def __init__(self,
         model:TypeVar('PPModel'),
         data:str|pd.DataFrame,
@@ -93,8 +92,8 @@ class PPGIS:
         if isinstance(data,str):
 
             # ignore header row if columns are specified
-            if not "skiprows" in kwargs and not columns is None:
-                kwargs["skiprows"] = 1 
+            if "skiprows" not in kwargs and not columns is None:
+                kwargs["skiprows"] = 1
 
             # read CSV file
             data = pd.read_csv(data,
@@ -110,7 +109,7 @@ class PPGIS:
         # check updates requested
         if update is None:
             update = set()
-        assert isinstance(update,set), f"update must be a set or None"
+        assert isinstance(update,set), "update must be a set or None"
         assert valid_updates - update == set(), f"update={{{valid_updates - update}}} " +\
             f"is not valid (must be one of {valid_updates})"
 
@@ -124,11 +123,14 @@ class PPGIS:
             gen = model.get_data("gen")
             nogis = set(gen.GEN_BUS) - set(data.BUS_I)
             assert nogis == set(), f"generators {nogis=} have no GIS data"
-            
+
             gengis = pd.merge(gen,data,left_on="GEN_BUS",right_on="BUS_I")
             gengis.set_index("GEN_BUS",inplace=True)
             data.set_index("BUS_I",inplace=True)
-            data["GEN"] = (gengis[["PMAX"]].groupby("GEN_BUS").sum()*model.case["baseMVA"]/1000).round(5)
+            data["GEN"] = (gengis[["PMAX"]]\
+                .groupby("GEN_BUS")\
+                .sum()*model.case["baseMVA"]/1000)\
+                .round(5)
             data.reset_index(inplace=True)
 
         # update loads
@@ -141,7 +143,10 @@ class PPGIS:
             loadgis = pd.merge(load,data,left_on="BUS_I",right_on="BUS_I")
             loadgis.set_index("BUS_I",inplace=True)
             data.set_index("BUS_I",inplace=True)
-            data["LOAD"] = (loadgis[["PD"]].groupby("BUS_I").sum()*model.case["baseMVA"]/1000).round(5)
+            data["LOAD"] = (loadgis[["PD"]]\
+                .groupby("BUS_I")\
+                .sum()*model.case["baseMVA"]/1000)\
+                .round(5)
             data.reset_index(inplace=True)
 
         # save data to this object
