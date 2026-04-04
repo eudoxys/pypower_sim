@@ -506,5 +506,9 @@ if __name__ == "__main__":
     print("-"*20,*["-"*(len(x)+2) for x in testcalls],"--------","--------------","--------------")
 
     print("","Output details","==============",sep="\n")
+    last = None
     for case,label,event,report in reportlist:
-        print(f"{event.upper()} [{case}@{label}]: {report}")
+        if last is None or case != last:
+            print("",f"  {os.path.basename(case)}:",sep="\n")
+            last = case
+        print(f"    {event.upper():10s} {label:10s} {report}")
