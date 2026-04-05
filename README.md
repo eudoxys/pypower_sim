@@ -1,6 +1,5 @@
-[![validate](https://github.com/eudoxys/pypower_sim/actions/workflows/validate.yaml/badge.svg?branch=main)](https://github.com/eudoxys/pypower_sim/actions/workflows/validate.yaml) 
-[![pages-build-deployment](https://github.com/eudoxys/pypower_sim/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/eudoxys/pypower_sim/actions/workflows/pages/pages-build-deployment)
-
+[![Validate Code](https://github.com/eudoxys/pypower_sim/actions/workflows/validate.yaml/badge.svg)](https://github.com/eudoxys/pypower_sim/actions/workflows/validate.yaml)
+[![Deploy Pages](https://github.com/eudoxys/pypower_sim/actions/workflows/deploy-pages.yml/badge.svg)](https://github.com/eudoxys/pypower_sim/actions/workflows/deploy-pages.yml)
 For full documentation see https://www.eudoxys.com/pypower_sim.
 
 # pypower_sim
