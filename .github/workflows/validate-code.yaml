@@ -19,16 +19,6 @@ jobs:
       with:
         python-version: 3.12
     
-    - name: Analyse code
-      run: |
-        cd pypower_sim
-        python3 -m venv .venv
-        source .venv/bin/activate
-        pip install --upgrade pip 1>/dev/null
-        pip install -r ../requirements.txt 1>/dev/null
-        pip install pylint 1>/dev/null
-        pylint --fail-under 0 *.py
-
     - name: Run tests
       run: |
         cd test
