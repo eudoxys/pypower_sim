@@ -651,6 +651,8 @@ if __name__ == "__main__":
         else:
             print("OK")
 
+    import os
+
     try:
         import wecc240
     except ModuleNotFoundError as err:
@@ -671,27 +673,27 @@ if __name__ == "__main__":
         else:
             raise
 
-    for test in [x for x in dir(wecc240) if x.startswith("wecc240_")]:
+    for test in [x for x in os.listdir("../test") if x.startswith("case")]:
 
         print(f"Testing {test}...")
-        module = getattr(wecc240,test)
-        test_model = PPModel(case=getattr(module,test)())
+        # module = getattr(wecc240,test)
+        test_model = PPModel(name=test[:-3],case=f"../test/{test}")
 
         solver = PPSolver(test_model)
 
-        for problem,method in {
+        for problem,solution in {
             "original model powerflow": solver.solve_pf,
             "original model OPF": solver.solve_opf,
             "original model OSP": solver.solve_osp,
             "optimal model OPF": solver.solve_opf,
             "optimal model PF": solver.solve_pf,
             }.items():
-            print(f"Solving {problem}",end="...",flush=True)
-            if method():
+            print(f"  Solving {problem}",end="...",flush=True)
+            if solution():
                 show_results(test_model)
             else:
-                print("ERROR:",method.__name__,"failed")
-                solver.model.options["VERBOSE"] = 3
-                solver.model.options["OUT_ALL"] = 1
-                method()
-                solver.model.options = solver.model.default_options
+                print("ERROR:",solution.__name__,"failed")
+                # solver.model.options["VERBOSE"] = 3
+                # solver.model.options["OUT_ALL"] = 1
+                # solution()
+                # solver.model.options = solver.model.default_options

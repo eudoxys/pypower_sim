@@ -1220,6 +1220,8 @@ def {self.name if not name else name}():
 
 if __name__ == '__main__':
 
+    from ppsolver import PPSolver
+
     pd.options.display.max_columns = None
     pd.options.display.width = None
     pd.options.display.max_rows = None
