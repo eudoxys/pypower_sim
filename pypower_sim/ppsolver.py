@@ -55,7 +55,9 @@ from pypower.runpf import runpf
 from pypower.rundcopf import rundcopf
 from pypower.runopf import runopf as runacopf
 from pypower.ppoption import ppoption
+# pylint: disable=unused-import
 from pypower import idx_gen, idx_bus
+# pylint: enable=unused-import
 from pypower_sim.runosp import runosp
 
 class PPSolver:
@@ -132,50 +134,15 @@ class PPSolver:
             return success,result
         return success
 
+    # pylint: disable=too-many-branches,too-many-arguments,too-many-statements
+    # pylint: disable=too-many-positional-arguments,too-many-locals
     def solve_osp(self,
         options:dict[str:str|int|float|dict]|None=None,
         update:str='success',
         with_result:bool=False,
-        costs:dict[str,float]|None=None,
-        generators:dict[str,float]={
-            "gen":{
-                "GEN_STATUS": 1,
-                "MBASE": 100,
-                },
-            "gencost":{
-                "MODEL": 2, # polynomial function
-                "NCOST": 2, # linear cost
-                "COST0": 50, # operating cost ($/MWh)
-                "COST1": 0, # fixed cost ($/h)
-                },
-            "roundup":-1,
-            },
-        capacitors:dict[str,float]={
-            "gen":{
-                "GEN_STATUS": 1,
-                "MBASE": 100,
-                },
-            "gencost":{
-                "MODEL": 2, # polynomial function
-                "NCOST": 2, # linear cost
-                "COST0": 0, # operating cost ($/MWh)
-                "COST1": 0, # fixed cost ($/h)
-                },
-            "roundup":0,
-            },
-        condensers:dict[str,float]={
-            "gen":{
-                "GEN_STATUS": 1,
-                "MBASE": 100,
-                },
-            "gencost":{
-                "MODEL": 2, # polynomial function
-                "NCOST": 2, # linear cost
-                "COST0": 0, # operating cost ($/MWh)
-                "COST1": 0, # fixed cost ($/h)
-                },
-            "roundup":0,
-            },
+        generators:dict[str,float]=None,
+        capacitors:dict[str,float]=None,
+        condensers:dict[str,float]=None,
         ):
         """Solve the optimal sizing placement problem
 
@@ -188,8 +155,6 @@ class PPSolver:
           {'always', 'success', 'failure', 'never'}`)
     
         - `with_result`: include result in return value
-
-        - `costs`: specify capacity expansion costs
 
         - `generators`: default `gen`, `gencost`, and `roundup` values for new
           generators
@@ -248,7 +213,49 @@ class PPSolver:
 
         The optimal sizing/placement solver is experimental.
         """
-        # warnings.warn("solver_osp is not implemented yet")
+
+        if generators is None:
+            generators = {
+                "gen":{
+                    "GEN_STATUS": 1,
+                    "MBASE": 100,
+                    },
+                "gencost":{
+                    "MODEL": 2, # polynomial function
+                    "NCOST": 2, # linear cost
+                    "COST0": 50, # operating cost ($/MWh)
+                    "COST1": 0, # fixed cost ($/h)
+                    },
+                "roundup":-1,
+                }
+        if capacitors is None:
+            capacitors = {
+                "gen":{
+                    "GEN_STATUS": 1,
+                    "MBASE": 100,
+                    },
+                "gencost":{
+                    "MODEL": 2, # polynomial function
+                    "NCOST": 2, # linear cost
+                    "COST0": 0, # operating cost ($/MWh)
+                    "COST1": 0, # fixed cost ($/h)
+                    },
+                "roundup":0,
+                }
+        if condensers is None:
+            condensers = {
+                "gen":{
+                    "GEN_STATUS": 1,
+                    "MBASE": 100,
+                    },
+                "gencost":{
+                    "MODEL": 2, # polynomial function
+                    "NCOST": 2, # linear cost
+                    "COST0": 0, # operating cost ($/MWh)
+                    "COST1": 0, # fixed cost ($/h)
+                    },
+                "roundup":0,
+                }
         result = runosp(self.model,config=options)
         status = result["status"]
         success = status == 1
@@ -264,7 +271,8 @@ class PPSolver:
             # add new generators to gen busses
             gens = None
             if "generators" in result and result["generators"] is not None:
-                gens = [(int(x),y) for x,y in enumerate(result["generators"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
+                gens = [(int(x),y) for x,y in enumerate(result["generators"]) \
+                    if round(y,3) > 0 and int(x) not in pqbus_ndx]
             if gens:
                 gen_bus, pmax = np.array(gens).T
                 if "roundup" in generators:
@@ -283,7 +291,8 @@ class PPSolver:
             # add active capacitors to gen busses
             caps = None
             if "capacitors" in result and result["capacitors"] is not None:
-                caps = [(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
+                caps = [(x,y) for x,y in enumerate(result["capacitors"]) \
+                    if round(y,3) > 0 and int(x) not in pqbus_ndx]
             if caps:
                 cap_bus, qmax = np.array(caps).T
                 if "roundup" in capacitors:
@@ -302,7 +311,8 @@ class PPSolver:
             # add active condensers to gen busses
             cons = None
             if "condensers" in result and result["condensers"] is not None:
-                cons = [(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
+                cons = [(x,y) for x,y in enumerate(-result["condensers"]) \
+                    if round(y,3) > 0 and int(x) not in pqbus_ndx]
             if cons:
                 con_bus, qmin = np.array(cons).T
                 if "roundup" in condensers:
@@ -310,8 +320,8 @@ class PPSolver:
                 newcon = {
                     "GEN_BUS": bus.iloc[con_bus].BUS_I,
                     "QMIN": qmin,
-                    "VG": np.abs(result["voltages"][cons_bus.astype(int)]).round(3)
-                    }.update(condensers["gen"])
+                    "VG": np.abs(result["voltages"][con_bus.astype(int)]).round(3)
+                    }
                 newcon.update({x:[y]*(len(con_bus)) for x,y in condensers["gen"].items()})
                 newconcost = {x:[y]*(len(con_bus)) for x,y in condensers["gencost"].items()}
             else:
@@ -338,35 +348,38 @@ class PPSolver:
             # add passive capacitors to PQ busses
             caps = None
             if "capacitors" in result and result["capacitors"] is not None:
-                caps = [(x,y) for x,y in enumerate(result["capacitors"]) if round(y,3) > 0 and int(x) in pqbus_ndx]
+                caps = [(x,y) for x,y in enumerate(result["capacitors"]) \
+                    if round(y,3) > 0 and int(x) in pqbus_ndx]
             if caps:
                 cap_bus, qmax = np.array(caps).T
                 if "roundup" in capacitors:
-                    bs = np.ceil(qmax*10**capacitors["roundup"])/10**capacitors["roundup"]
+                    qmax = np.ceil(qmax*10**capacitors["roundup"])/10**capacitors["roundup"]
                 newcap = {
+                    # pylint: disable=protected-access
                     "BUS": self.model._bus_i(bus.iloc[cap_bus].BUS_I.values.tolist()),
-                    "BS":bs,
+                    "BS":qmax,
                     }
                 self.model.case["bus"][newcap["BUS"],idx_bus.BS] += newcap["BS"]
 
             # add passive condensers to PQ busses
             cons = None
             if "condensers" in result and result["condensers"] is not None:
-                cons = [(x,y) for x,y in enumerate(-result["condensers"]) if round(y,3) > 0 and int(x) not in pqbus_ndx]
+                cons = [(x,y) for x,y in enumerate(-result["condensers"]) \
+                    if round(y,3) > 0 and int(x) not in pqbus_ndx]
             if cons:
                 con_bus, qmin = np.array(cons).T
                 if "roundup" in condensers:
-                    bs = -np.ceil(qmin*10**condensers["roundup"])/10**condensers["roundup"]
+                    qmin = -np.ceil(qmin*10**condensers["roundup"])/10**condensers["roundup"]
                 newcon = {
+                    # pylint: disable=protected-access
                     "BUS":self.model._bus_i(bus.iloc[con_bus].BUS_I.values.tolist()),
-                    "BS": bs,
+                    "BS": qmin,
                     }
                 self.model.case["bus"][newcap["BUS"],idx_bus.BS] += newcap["BS"]
 
         if with_result:
             return status,result
-        else:
-            return status
+        return status
 
     def update_inputs(self,t:dt.datetime) -> int:
         """Synchronize inputs with the current date/time
@@ -430,13 +443,14 @@ class PPSolver:
                 if not isinstance(value,(int,float,bool,str,type(None))):
                     value = float('nan')
                 elif isinstance(value,(int,float)):
+                    # pylint: disable=eval-used
                     value = eval(spec["transform"])(value)
                 values.append(f"{{0:{spec['format']}}}".format(value))
             print(*values,sep=",",file=recorder["fh"],flush=True)
         return errors
 
     def run_timeseries(self,*args,
-        # pylint: disable=too-many-arguments,too-many-locals
+        # pylint: disable=too-many-arguments,too-many-locals, too-many-statements
         progress:Callable=None,
         call_on_fail:Callable=None,
         stop_on_fail:bool=True,
@@ -505,6 +519,8 @@ class PPSolver:
 
         - `list[str]`: Error messages (when stop_on_fail is False)
         """
+
+        # pylint: disable=too-many-branches
         assert progress is None or callable(progress), \
             "progress must be callable or None"
         assert call_on_fail is None or callable(call_on_fail), \
@@ -535,12 +551,14 @@ class PPSolver:
 
         # start recorders
         for file,recorder in self.model.recorders.items():
+            # pylint: disable=consider-using-with
             recorder["fh"] = open(file,"w",encoding="utf-8")
             columns = ["timestamp"] + list(recorder["targets"].keys())
             print(*columns,sep=",",file=recorder["fh"],flush=True)
 
         # start outputs
         for file,output in self.model.outputs.items():
+            # pylint: disable=consider-using-with
             output["fh"] = open(file,"w",encoding="utf-8")
             columns = ["timestamp"] + output["mapping"]["columns"]
             print(*columns,sep=",",file=output["fh"],flush=True)
@@ -616,17 +634,19 @@ class PPSolver:
 
 if __name__ == "__main__":
 
-    show_violations = False
-    show_totals = True
+    SHOW_VIOLATIONS = False
+    SHOW_TOTALS = True
 
     def show_results(model):
+        """Print test results"""
         violations = model.get_violations()
-        if violations or show_totals:
+        if violations or SHOW_TOTALS:
             generators = complex(*model.get_data("gen")[["PG","QG"]].values.sum(axis=0))
             loads = complex(*model.get_data("bus")[["PD","QD"]].values.sum(axis=0))
             losses = generators - loads
-            print(f"{generators=:.1f}, {generators=:.1f}, {losses=:.1f}, violations={len(violations)}")
-            if show_violations:
+            print(f"{generators=:.1f}, {generators=:.1f}, {losses=:.1f}, "
+                f"violations={len(violations)}")
+            if SHOW_VIOLATIONS:
                 print(*violations,sep="\n")
         else:
             print("OK")
@@ -635,12 +655,14 @@ if __name__ == "__main__":
         import wecc240
     except ModuleNotFoundError as err:
         import os
-        if str(err) == "No module named 'wecc240'" and os.system("pip install git+https://github.com/eudoxys/wecc240") == 0:
+        if str(err) == "No module named 'wecc240'" \
+                and os.system("pip install git+https://github.com/eudoxys/wecc240") == 0:
             import wecc240
         else:
             raise
 
     try:
+        # pylint: disable=ungrouped-imports
         from pypower_sim.ppmodel import PPModel
     except ModuleNotFoundError as err:
         import os
@@ -653,9 +675,9 @@ if __name__ == "__main__":
 
         print(f"Testing {test}...")
         module = getattr(wecc240,test)
-        model = PPModel(case=getattr(module,test)())
+        test_model = PPModel(case=getattr(module,test)())
 
-        solver = PPSolver(model)
+        solver = PPSolver(test_model)
 
         for problem,method in {
             "original model powerflow": solver.solve_pf,
@@ -666,63 +688,10 @@ if __name__ == "__main__":
             }.items():
             print(f"Solving {problem}",end="...",flush=True)
             if method():
-                show_results(model)
+                show_results(test_model)
             else:
                 print("ERROR:",method.__name__,"failed")
                 solver.model.options["VERBOSE"] = 3
                 solver.model.options["OUT_ALL"] = 1
                 method()
                 solver.model.options = solver.model.default_options
-
-        # print("Solving original model powerflow",end="...",flush=True)
-        # if solver.solve_pf():
-        #     show_results(model)
-        # else:
-        #     print("PF failed")
-
-        # print("Solving original model OPF",end="...",flush=True)
-        # if solver.solve_opf(use_acopf=True):
-        #     show_results(model)
-        # else:
-        #     print("OPF failed")
-        #     solver.model.options["VERBOSE"] = 3
-        #     solver.model.options["OUT_ALL"] = 1
-        #     solver.solve_opf(use_acopf=True)
-        #     solver.model.options = solver.model.default_options
-
-        # print("Solving original OPF model powerflow",end="...",flush=True)
-        # if solver.solve_pf():
-        #     show_results(model)
-        # else:
-        #     print("PF failed")
-        #     solver.model.options["VERBOSE"] = 3
-        #     solver.model.options["OUT_ALL"] = 1
-        #     solver.solve_pf()
-        #     solver.model.options = solver.model.default_options
-
-        # print("Solving original OSP model",end="...",flush=True)
-        # if solver.solve_osp():
-        #     show_results(model)
-        # else:
-        #     print("OSP failed")
-
-
-        # print("Solving optimal model OPF",end="...",flush=True)
-        # if solver.solve_opf(use_acopf=True):
-        #     show_results(model)
-        # else:
-        #     print("OPF failed")
-        #     solver.model.options["VERBOSE"] = 3
-        #     solver.model.options["OUT_ALL"] = 1
-        #     solver.solve_opf(use_acopf=True)
-        #     solver.model.options = solver.model.default_options
-
-        # print("Solving optimal OPF model powerflow",end="...",flush=True)
-        # if solver.solve_pf():
-        #     show_results(model)
-        # else:
-        #     print("PF failed")
-        #     solver.model.options["VERBOSE"] = 3
-        #     solver.model.options["OUT_ALL"] = 1
-        #     solver.solve_pf()
-        #     solver.model.options = solver.model.default_options

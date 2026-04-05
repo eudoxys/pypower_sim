@@ -1,3 +1,4 @@
+# pylint: disable=line-too-long
 r"""Optimal resource sizing/placement
 
 Optimal sizing and placement (OSP) finds the lowest cost set of additional
@@ -5,9 +6,9 @@ substations, generators, condensers, capacitors, and powerline ratings needed
 to make a network model feasible and operate with a minimum of losses given a
 maximum load.
 
-For an $N$-bus and $M$-line network the problem is stated as 
+For an $N$-bus and $M$-line network the problem is stated as
 
-$\underset{x,y,g,h,c,d}{\min} (c-\Re \hat{G}) \lfloor_0 ~ C_s + c~G_g + \frac12(C_c-C_d)~d + \frac12(C_c+C_d)~|d| + C_l ~ f + C_m ~ e$
+$\underset{x,y,g,h,c,d}{\min} (c-\Re \hat{G}) \lfloor_0 ~ C_s + G_g~c + \frac12(C_c-C_d)~d + \frac12(C_c+C_d)~|d| + C_l ~ f + C_m ~ e$
 
 subject to
 
@@ -49,7 +50,7 @@ where the variable
   plus the load margin,
 
 - $e \in \mathbb {R}^N$ is the power generation constraint softening needed
-  to make the problem feasible when it otherwise infeasible---set to 
+  to make the problem feasible when it otherwise infeasible---set to
   zero when the $C_m$ is not specified,
 
 - $f \in \mathbb {R}^M$ is the adding line rating needed to make the powerflow
@@ -124,9 +125,9 @@ admittance accordingly.
 
 - [CVXPY](https://www.cvxpy.org/index.html)
 """
+# pylint: enable=line-too-long
 
 from typing import TypeVar
-from copy import deepcopy
 
 from numpy import array
 import numpy as np
@@ -135,6 +136,7 @@ import cvxpy as cp
 
 class OspConfig:
     """OSP solver configuration parameters"""
+    # pylint: disable=too-many-instance-attributes,too-few-public-methods
     def __init__(self,**kwargs):
         """Construct an OSP solver configuration"""
 
@@ -220,6 +222,7 @@ def runosp(
     model:TypeVar('pypower_sim.ppmodel.PPModel'),
     config:OspConfig|dict=None,
     ) -> dict:
+    # pylint: disable=too-many-branches,too-many-locals,too-many-statements
     """Solve the optimal sizing/placement problem
 
     # Arguments
@@ -244,8 +247,10 @@ def runosp(
     bus = model.get_data("bus")
     branch = model.get_data("branch")
     gen = model.get_data("gen")
+    # pylint: disable=protected-access
     graph = model._graph()
 
+    # pylint: disable=invalid-name
     N = len(bus)
     M = len(branch)
 
@@ -257,11 +262,11 @@ def runosp(
         if isinstance(x,list):
             return [bus_i(y) for y in x]
         return bus["BUS_I"].astype(int).tolist().index(int(x))
-        
+
     G = graph.laplacian(weighted=True,complex_flows=True).todense() # weighted graph Laplacian
-    D = array([complex(*z) for z in bus[["PD","QD"]].values],ndmin=1) / model.case["baseMVA"] # demand
-    I = graph.incidence(weighted=True,complex_flows=True).todense().T # weighted incidence matrix
-    J = graph.incidence(weighted=False,complex_flows=False).todense().T # unweighted incidence matrix
+    D = array([complex(*z) for z in bus[["PD","QD"]].values],ndmin=1) / model.case["baseMVA"]
+    I = graph.incidence(weighted=True,complex_flows=True).todense().T # weighted incidence
+    J = graph.incidence(weighted=False,complex_flows=False).todense().T # unweighted incidence
     F = array(branch[config.line_rating].values,ndmin=1) / model.case["baseMVA"] # line ratings
 
     # reference bus and reference voltage
@@ -292,19 +297,24 @@ def runosp(
 
     # generator limits
     i,j = [bus_i(x) for x in gen["GEN_BUS"]],array([0]*len(gen)) # generator bus index
-    PGmin = sp.sparse.coo_array((gen["PMIN"].values,(i,j)),shape=(N,1)).todense()/model.case["baseMVA"]
-    PGmax = sp.sparse.coo_array((gen["PMAX"].values,(i,j)),shape=(N,1)).todense()/model.case["baseMVA"]
-    QGmin = sp.sparse.coo_array((gen["QMIN"].values,(i,j)),shape=(N,1)).todense()/model.case["baseMVA"]
-    QGmax = sp.sparse.coo_array((gen["QMAX"].values,(i,j)),shape=(N,1)).todense()/model.case["baseMVA"]
+    PGmin = sp.sparse.coo_array((gen["PMIN"].values,(i,j)),shape=(N,1))\
+        .todense()/model.case["baseMVA"]
+    PGmax = sp.sparse.coo_array((gen["PMAX"].values,(i,j)),shape=(N,1))\
+        .todense()/model.case["baseMVA"]
+    QGmin = sp.sparse.coo_array((gen["QMIN"].values,(i,j)),shape=(N,1))\
+        .todense()/model.case["baseMVA"]
+    QGmax = sp.sparse.coo_array((gen["QMAX"].values,(i,j)),shape=(N,1))\
+        .todense()/model.case["baseMVA"]
 
     # substation construction cost
     sub_cost = config.substation_cost * cp.maximum(c-PGmax.T,0)
 
     # cost of real power capacity additions
-    gen_cost = config.generation_cost * cp.abs(c) 
+    gen_cost = config.generation_cost * cp.abs(c)
 
     # cost of reactive power capacity additions
-    svd_cost = (config.capacitor_cost-config.condenser_cost)/2*d + (config.condenser_cost+config.capacitor_cost)/2*cp.abs(d)
+    svd_cost = (config.capacitor_cost-config.condenser_cost)/2*d \
+        + (config.condenser_cost+config.capacitor_cost)/2*cp.abs(d)
 
     # total cost of capacity additions
     cost = cp.sum(sub_cost + gen_cost + svd_cost)
@@ -324,8 +334,11 @@ def runosp(
         B @ x - g - c + PD * ( 1 + config.load_margin ) == 0,  # KCL/KVL real power laws
         B @ y - h - d + QD * ( 1 + config.load_margin ) == 0,  # KCL/KVL reactive power laws
 
-        x[reference_bus] == np.angle(config.reference_voltage),  # swing bus(ses) voltage angle value(s)
-        y[reference_bus] == np.abs(config.reference_voltage),  # swing bus(ses) voltage magnitude value(s)
+        # swing bus(ses) voltage angle value(s)
+        x[reference_bus] == np.angle(config.reference_voltage),
+
+        # swing bus(ses) voltage magnitude value(s)
+        y[reference_bus] == np.abs(config.reference_voltage),
 
         # generation limits
         PGmin-e <= g, g <= PGmax+e, # real power limits
@@ -337,12 +350,12 @@ def runosp(
     # voltage magnitudes are constrained
     if config.voltage_limit is not None:
 
-        constraints.append(cp.abs(y - 1) <= config.voltage_limit),
+        constraints.append(cp.abs(y - 1) <= config.voltage_limit)
 
     # voltage angle are constrainted (recommend no more than +/-10 deg)
     if config.angle_limit is not None:
 
-        constraints.append(cp.abs(J @ x) <= np.pi/180*config.angle_limit),
+        constraints.append(cp.abs(J @ x) <= np.pi/180*config.angle_limit)
 
     # generation growth constraints specified (bus types may need to be changed by caller)
     if config.generation_limit is not None:
@@ -350,7 +363,7 @@ def runosp(
         constraints.append(c <= config.generation_limit)
 
     # only allow generation to be added at non-PQ busses
-    else: 
+    else:
 
         k = bus[bus.BUS_TYPE == 1].index.astype(int).tolist()  # PQ bus list
         constraints.append(c[k] == 0)
@@ -360,7 +373,7 @@ def runosp(
 
         constraints.append([
             cp.abs(I @ x) <= F + f, # line flow limits
-            f >= 0, 
+            f >= 0,
             ])
 
     # no line rating upgrades permitted
@@ -375,6 +388,7 @@ def runosp(
     problem = cp.Problem(cp.Minimize(cost), constraints)
 
     # construct result
+    # pylint: disable=unused-variable
     error = None
     value = None
     status = False
@@ -385,7 +399,7 @@ def runosp(
     lines = None
     try:
 
-        problem.solve(**config.cvx_solver)        
+        problem.solve(**config.cvx_solver)
         value = problem.value
         if value is None:
             error = problem.status
@@ -399,10 +413,12 @@ def runosp(
             voltages = y.value * np.exp(x.value*1j)
             lines = f.value
 
+    # pylint: disable=broad-exception-caught
     except Exception as err:
 
         error = str(err)
 
+    # pylint: disable=eval-used
     result = {x:eval(y) for x,y in config.results.items()}
 
     # print(result["lines"])
@@ -410,31 +426,28 @@ def runosp(
 
 if __name__ == "__main__":
 
-    import os, sys
+    import os
+    import re
     import time
     import warnings
 
-    from ppmodel import PPModel
-    from ppsolver import PPSolver
-
+    # pylint: disable=ungrouped-imports
     import pandas as pd
+
+    from pypower_sim.ppmodel import PPModel
+    from pypower_sim.ppsolver import PPSolver
 
     pd.options.display.max_columns = None
     pd.options.display.width = None
     pd.options.display.max_rows = None
 
-    import numpy as np
     np.set_printoptions(formatter={
         "float_kind":lambda x:f"{x:8.3f}",
         "complex_kind":lambda x:f"{x.real:8.3f}{x.imag:+8.3f}j",
         })
 
-    error_dump = False
-    error_stop = False
-
     def intx(x,with_tail=False):
         """Return int value with tail string"""
-        import re
         match = re.search(r"\d+",x)
         if match:
             result = match.group()
@@ -442,8 +455,10 @@ if __name__ == "__main__":
                 return int(result),x[len(result):]
             return int(result)
         raise ValueError("not an integer")
-    tests = sorted([x[4:-3] for x in os.listdir("../test") if x.startswith("case") and x.endswith(".py")],key=lambda x:intx(x,True))
-    sz = max([len(x) for x in tests])
+
+    tests = sorted([x[4:-3] for x in os.listdir("../test") \
+        if x.startswith("case") and x.endswith(".py")],key=lambda x:intx(x,True))
+    sz = max(len(x) for x in tests)
     testcalls = {
                 "Initial PF": "solve_pf",
                 "Initial OPF": "solve_opf",
@@ -452,7 +467,8 @@ if __name__ == "__main__":
                 "Resized OPF":"solve_opf",
                 "Resized PF":"solve_pf",
                 }
-    print(f"{'Case':^20s}",*[f" {x} " for x in testcalls],f"{'Time (s)':^8s}",f"{'Newgen (%MW)':^14s}",f"{'Savings (%MW)':^14s}")
+    print(f"{'Case':^20s}",*[f" {x} " for x in testcalls],
+        f"{'Time (s)':^8s}",f"{'Newgen (%MW)':^14s}",f"{'Savings (%MW)':^14s}")
     print("-"*20,*["-"*(len(x)+2) for x in testcalls],"--------","--------------","--------------")
     reportlist = []
     for caseid in tests:
@@ -460,49 +476,56 @@ if __name__ == "__main__":
         print(f"case{caseid}.py"," "*(20-len(caseid)-7),end="",flush=True)
 
         try:
-            model = PPModel(os.path.splitext(os.path.basename(case))[0],case=case)
-            assert "gencost" in model.case, "no gencost data"
+            test_model = PPModel(os.path.splitext(os.path.basename(case))[0],case=case)
+            assert "gencost" in test_model.case, "no gencost data"
+        # pylint: disable=broad-exception-caught
         except Exception as err:
             reportlist.append((case,"model","exception",str(err)))
             print(f"*** unusable model: {err} ***",flush=True)
             continue
         tic = time.time()
-        solver = PPSolver(model)
+        solver = PPSolver(test_model)
         pwrtotal = []
         gentotal = []
         for label,call in testcalls.items():
             try:
                 with warnings.catch_warnings(record=True) as recording:
                     warnings.simplefilter("always")
-                    status,result = getattr(solver,call)(with_result=True)
+                    test_status,test_result = getattr(solver,call)(with_result=True)
                 report = "ok"
                 if call == "solve_pf":
-                    violations = model.get_violations(rel_err=0.01)
+                    violations = test_model.get_violations(rel_err=0.01)
                     if violations:
                         report = "violations"
                         reportlist.extend([(case,label,"violation",x) for x in violations])
                 if recording:
                     report = "warning"
                     for msg in recording:
-                        reportlist.append((case,label,"warning",f"{msg.category.__name__} -- {msg.message}" ))
-                if status == False:
-                    if "error" in result:
+                        reportlist.append((case,label,"warning",
+                            f"{msg.category.__name__} -- {msg.message}" ))
+                if test_status is False:
+                    if "error" in test_result:
                         report = "error"
-                        reportlist.append((case,label,"error",result["error"]))
+                        reportlist.append((case,label,"error",test_result["error"]))
                     else:
                         report = "failed"
-                        reportlist.append((case,label,"failed",result["raw"]["output"]["message"]))
+                        reportlist.append((case,label,"failed",
+                            test_result["raw"]["output"]["message"]))
                 elif call == "solve_pf":
-                    pwrtotal.append(sum((abs(complex(x,y)) for x,y in model.get_data("gen")[["PMAX","QMAX"]].values)))
-                    gentotal.append(sum((abs(complex(x,y)) for x,y in model.get_data("gen")[["PG","QG"]].values)))
+                    pwrtotal.append(sum((abs(complex(x,y)) \
+                        for x,y in test_model.get_data("gen")[["PMAX","QMAX"]].values)))
+                    gentotal.append(sum((abs(complex(x,y)) \
+                        for x,y in test_model.get_data("gen")[["PG","QG"]].values)))
             except Exception as err:
                 report = "exception"
                 reportlist.append((case,label,"exception",err))
-                model.print()
+                test_model.print()
                 raise
-            print(" "*((len(label)-len(report))//2),report," "*((len(label)+1-len(report))//2),end=" ",flush=True)
+            print(" "*((len(label)-len(report))//2),report," "*((len(label)+1-len(report))//2),
+                end=" ",flush=True)
         toc = time.time()
-        print(f"{toc-tic:8.3f}",f"{(1-pwrtotal[1]/pwrtotal[2])*100:12.2f}% ",f"{(1-gentotal[2]/gentotal[1])*100:12.2f}% ")
+        print(f"{toc-tic:8.3f}",f"{(1-pwrtotal[1]/pwrtotal[2])*100:12.2f}% ",
+            f"{(1-gentotal[2]/gentotal[1])*100:12.2f}% ")
     print("-"*20,*["-"*(len(x)+2) for x in testcalls],"--------","--------------","--------------")
 
     print("","Output details","==============",sep="\n")

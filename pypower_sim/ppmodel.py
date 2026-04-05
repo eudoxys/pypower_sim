@@ -1,8 +1,8 @@
 """PyPower model accessor
 
-The PyPower model accessor is used to manage the bus, branch, generator, generator cost,
-DC line, and DC line cost data arrays in `pypower` cases. Use the 'case' member to
-access the `pypower` case data.
+The PyPower model accessor is used to manage the bus, branch, generator,
+generator cost, DC line, and DC line cost data arrays in `pypower` cases. Use
+the 'case' member to access the `pypower` case data.
 
 The `save_case()` method is used to export a PyPower case file.
 
@@ -20,25 +20,27 @@ The following example constructs a new PyPower model and prints the case data.
 
 # Data Structures
 
-- `pypower_sim.ppmodel.PPModel.case`: Provides all the PyPOWER case data needed to solve powerflow and
-  optimal powerflows. See PyPOWER `idx_*` for details.
+- `pypower_sim.ppmodel.PPModel.case`: Provides all the PyPOWER case data
+  needed to solve powerflow and optimal powerflows. See PyPOWER `idx_*` for
+  details.
 
-- `pypower_sim.ppmodel.PPModel.inputs`: Provides all the information required to read data from input
-  files and update `case` data.
+- `pypower_sim.ppmodel.PPModel.inputs`: Provides all the information required
+  to read data from input files and update `case` data.
 
-- `pypower_sim.ppmodel.PPModel.outputs`: Provides all the information required to read `case` data and
-  update the output files.
+- `pypower_sim.ppmodel.PPModel.outputs`: Provides all the information required
+  to read `case` data and update the output files.
 
-- `pypower_sim.ppmodel.PPModel.recorders`: Provides all the information required to read `case` data and
-  update the recorder files.
+- `pypower_sim.ppmodel.PPModel.recorders`: Provides all the information
+  required to read `case` data and update the recorder files.
 
-- `pypower_sim.ppmodel.PPModel.options`: Provides all the options used by the PyPOWER solvers. See PyPOWER
-  `ppoption` for details.
+- `pypower_sim.ppmodel.PPModel.options`: Provides all the options used by the
+  PyPOWER solvers. See PyPOWER `ppoption` for details.
 
-- `pypower_sim.ppmodel.PPModel.errors`: Records all the error message emitted during a solver call.
+- `pypower_sim.ppmodel.PPModel.errors`: Records all the error message emitted
+  during a solver call.
 
-- `pypower_sim.ppmodel.PPModel.profile`: Collects all the solver performance data obtained during a solver
-  call.
+- `pypower_sim.ppmodel.PPModel.profile`: Collects all the solver performance
+  data obtained during a solver call.
 
 - `pypower_sim.ppmodel.PPModel.cost`: OPF cost result (if any)
 
@@ -52,6 +54,7 @@ The following example constructs a new PyPower model and prints the case data.
 
 - `PSSE2PP`: Model converter from PSSE
 """
+# pylint: disable=too-many-lines
 
 import os
 import sys
@@ -59,7 +62,7 @@ import io
 from copy import copy
 import json
 import datetime as dt
-from typing import Self, Callable
+from typing import Callable
 import warnings
 from importlib.util import spec_from_file_location, module_from_spec
 from importlib.metadata import version as pkg_version
@@ -67,12 +70,12 @@ from importlib.metadata import version as pkg_version
 import numpy as np
 import pandas as pd
 
-from pypower import idx_brch as idx_branch
 # pylint: disable=unused-import
-from pypower import idx_gen, idx_bus # used indirectly in get_header()
-# pylint: enable=unused-import
+from pypower import idx_brch as idx_branch
+from pypower import idx_gen, idx_bus
 from pypower import idx_cost as idx_gencost
 from pypower_sim.ppgis import idx_gis
+# pylint: enable=unused-import
 from pypower_sim.ppgraph import PPGraph
 from pypower_sim.ppjson import PypowerModelEncoder, PypowerModelDecoder
 from pypower_sim.kml import KML
@@ -111,7 +114,7 @@ class idx_dcline:
 
 class idx_construction:
     """@private Provide column index values for construction costs"""
-
+    # pylint: disable=invalid-name,too-few-public-methods
     BUS_I = 0
     GENERATOR = 1
     CONDENSER = 2
@@ -136,9 +139,9 @@ def _get_idx(name:str) -> list[str]:
         "indexes are not strictly sequential"
     return [mapping[n] for n in indexes]
 
+# pylint: disable=too-many-instance-attributes,too-many-public-methods
 class PPModel:
     """`pypower_sim` model access class implementation"""
-
     default_model = {
         "version": 2,
         "baseMVA": 100.0,
@@ -204,7 +207,7 @@ class PPModel:
     """Table of `idx_*` indexes that refer to values having non-float types"""
 
     default_options = {
-        
+
         # general options
         "VERBOSE": 0, 
         "OUT_ALL": 0,
@@ -257,7 +260,7 @@ class PPModel:
 
         self.case : dict[str|int|np.array] = None
         """Case data (see https://github.com/eudoxys/pypower)"""
-        
+
         self.zone_kv : list[float] = None
         """Bus zone voltages for per-unit calculations"""
 
@@ -354,7 +357,7 @@ class PPModel:
         elif isinstance(data,str) and data.endswith(".py"):
             if self.name is None:
                 self.name = os.path.splitext(os.path.basename(data))[0]
-            callname,filename = data.split("@",1) if "@" in data else (self.name,data)
+            callname,_ = data.split("@",1) if "@" in data else (self.name,data)
             modspec = spec_from_file_location(self.name,data)
             module = module_from_spec(modspec)
             sys.modules[self.name] = module
@@ -362,7 +365,7 @@ class PPModel:
             data = getattr(module,callname)()
             # print(data)
         elif isinstance(data,str) and data.endswith(".json"):
-            TODO
+            raise NotImplementedError("JSON not supported")
         elif callable(data):
             data = data()
         assert isinstance(data,dict), f"{data=} is not a dict"
@@ -374,17 +377,20 @@ class PPModel:
         for x in ["version","baseMVA","bus","branch","gen","gencost","dcline","dclinecost","gis"]:
             if x in data:
                 self.case[x] = data[x]
-        
+
         # check data
         assert "version" in self.case, "version missing in case"
-        assert int(self.case["version"]) == int(self.default_model["version"]), f"version={self.case['version']} is not valid"
+        assert int(self.case["version"]) == int(self.default_model["version"]), \
+        f"version={self.case['version']} is not valid"
         assert "baseMVA" in self.case, "baseMVA missing in case"
         assert self.case["baseMVA"] > 0.0, f"baseMVA={self.case['baseMVA']} is not valid"
         assert "bus" in self.case, "bus missing in case"
         assert "branch" in self.case, "branch missing in case"
         assert "gen" in self.case, "gen missing in case"
         if "gencost" in self.case:
-            assert len(self.case["gencost"]) == len(self.case["gen"]), f"len(gencost)={len(self.case['gencost'])} does not match len(gen)={len(self.case['gen'])}"
+            assert len(self.case["gencost"]) == len(self.case["gen"]), \
+            f"len(gencost)={len(self.case['gencost'])} does not match" \
+            f" len(gen)={len(self.case['gen'])}"
 
         # fix zero basekv values
         if "BASE_KV" in self.default_values and not self.default_values["BASE_KV"] is None:
@@ -394,7 +400,7 @@ class PPModel:
 
         # gather zone basekv values
         if len(self.case["bus"]) > 0:
-            self.kv_zones = sorted(set([float(x) for x in self.case["bus"][:,idx_bus.BASE_KV]]))
+            self.kv_zones = sorted({float(x) for x in self.case["bus"][:,idx_bus.BASE_KV]})
             self.bus_kvzone = [self.kv_zones.index(x) for x in self.case["bus"][:,idx_bus.BASE_KV]]
         else:
             self.kv_zones = []
@@ -512,7 +518,7 @@ class PPModel:
 
         if hasattr(file,"writable") and file.writable():
             self.to_json(file,**kwargs)
-            return
+            return None
 
         raise ValueError(f"{file=} is not writable")
 
@@ -534,7 +540,7 @@ class PPModel:
 
         if hasattr(file,"readable") and file.readable():
             self.from_json(file)
-            return
+            return None
 
         raise ValueError(f"{file=} is not readable")
 
@@ -575,6 +581,7 @@ def {self.name if not name else name}():
         file:[io.TextIOWrapper]=sys.stdout,
         flush:bool=True
         ):
+        # pylint: disable=too-many-branches,too-many-locals
         """Print case data
 
         # Arguments
@@ -647,6 +654,7 @@ def {self.name if not name else name}():
                 dclinecost[column] = dclinecost[column].astype(dtype)
             dclinecost.index.name="DCLINECOST"
             print(dclinecost,file=file)
+
         print(file=sys.stdout,flush=flush)
         print(file=sys.stderr,flush=flush)
 
@@ -734,9 +742,16 @@ def {self.name if not name else name}():
         Returns
         -------
         """
+        if ref is None:
+            ref = self.get_refbus()
+        if isinstance(ref,list):
+            assert len(ref) == 1, f"only one reference bus can be specified ({ref=})"
+            ref = ref[0]
+        assert isinstance(ref,int), f"reference bus must be an integer ({ref=})"
         if kind == "bus":
+            # pylint: disable=invalid-name
             Sbase = self.case["baseMVA"]
-            Vbase = self.case["bus"][:,idx_bus.BASE_KV]
+            Vbase = self.case["bus"][ref,idx_bus.BASE_KV]
             match unit:
                 case 'MW':
                     return Sbase
@@ -753,6 +768,8 @@ def {self.name if not name else name}():
         if kind == "branch":
 
             raise NotImplementedError("{kind=} is not implemented yet")
+
+        return None
 
     bus_optional = ["LAM_P","LAM_Q","MU_VMIN","MU_VMAX"]
     @classmethod
@@ -962,8 +979,8 @@ def {self.name if not name else name}():
             header.append(f"{last}{n}")
             n += 1
         result = pd.DataFrame(self.case[name].T,header[:width]).T
-        for column,type in self.types_idx[name].items():
-            result[column] = result[column].astype(type)
+        for column,dtype in self.types_idx[name].items():
+            result[column] = result[column].astype(dtype)
         return result
 
     def get_gis(self) -> pd.DataFrame:
@@ -1013,9 +1030,9 @@ def {self.name if not name else name}():
         - `dict`: table of nodes and bus ids
         """
         nodes = {}
-        for n,data in (self.get_gis() if data is None else data)[
+        for _,row in (self.get_gis() if data is None else data)[
                 ["BUS_I","GEOHASH"]].iterrows():
-            bus_i,geohash = data.values
+            bus_i,geohash = row.values
             if geohash in nodes:
                 nodes[geohash].append(bus_i)
             else:
@@ -1096,6 +1113,7 @@ def {self.name if not name else name}():
         abs_err : float = None, # absolute error
         rel_err : float = None # relative error
         ) -> dict[str:list[str]]:
+        # pylint: disable=too-many-branches
         """Get list of powerflow case violations
 
         Arguments
@@ -1115,10 +1133,11 @@ def {self.name if not name else name}():
 
         # check busses
         for n,bus in self.get_data("bus").iterrows():
-            
+
             # check bus voltage magnitudes
             if not Fuzzy(bus.VMIN) <= bus.VM and Fuzzy(bus.VM) <= bus.VMAX:
-                result.append(f"bus#{n}: bus '{bus.BUS_I:.0f}' VM={bus.VM:.3f} puV outside limits ({bus.VMIN:.3f},{bus.VMAX:.3f}) puV")
+                result.append(f"bus#{n}: bus '{bus.BUS_I:.0f}' VM={bus.VM:.3f}"\
+                    f" puV outside limits ({bus.VMIN:.3f},{bus.VMAX:.3f}) puV")
 
         # check branches
         for n,branch in self.get_data("branch").iterrows():
@@ -1130,9 +1149,11 @@ def {self.name if not name else name}():
             if not "PF" in branch or not "QF" in branch:
                 continue
             flow = max(abs(complex(branch.PF,branch.QF)),abs(complex(branch.PT,branch.QT)))
-            rated = 0.0 if branch.BR_STATUS == 0 else max(branch.RATE_A,branch.RATE_B,branch.RATE_C) 
+            rated = 0.0 if branch.BR_STATUS == 0 else max(branch.RATE_A,branch.RATE_B,branch.RATE_C)
             if rated > 0 and Fuzzy(flow) > rated:
-                result.append(f"branch#{n}: branch from bus '{branch.F_BUS:.0f}' to '{branch.T_BUS:.0f}' apparent power flow {flow:.3f} MVA exceeds maximum rating {rated:.3f} MW")
+                result.append(f"branch#{n}: branch from bus '{branch.F_BUS:.0f}' "
+                    f"to '{branch.T_BUS:.0f}' apparent power flow {flow:.3f} "
+                    f"MVA exceeds maximum rating {rated:.3f} MW")
 
         # check generators
         for n,gen in self.get_data("gen").iterrows():
@@ -1142,12 +1163,20 @@ def {self.name if not name else name}():
                 continue
 
             # check real power
-            if gen.PG > 0 and gen.PMAX > gen.PMIN and not Fuzzy(gen.PMIN) <= gen.PG and not Fuzzy(gen.PG) <= gen.PMAX:
-                result.append(f"gen#{n}: generator at bus '{gen.GEN_BUS:.0f}' real power PG={gen.PG:.3f} MW outside power dispatch limits ({gen.PMIN:.3f},{gen.PMAX:.3f}) MW")
+            if gen.PG > 0 and gen.PMAX > gen.PMIN \
+                    and not Fuzzy(gen.PMIN) <= gen.PG \
+                    and not Fuzzy(gen.PG) <= gen.PMAX:
+                result.append(f"gen#{n}: generator at bus '{gen.GEN_BUS:.0f}' "
+                    f"real power PG={gen.PG:.3f} MW outside power "
+                    f"dispatch limits ({gen.PMIN:.3f},{gen.PMAX:.3f}) MW")
 
             # check reactive power
-            if gen.QG != 0 and gen.QMAX < gen.QMIN and not Fuzzy(gen.QMIN) <= gen.QG and Fuzzy(gen.QG) <= gen.QMAX:
-                result.append(f"gen#{n}: generator at bus '{gen.GEN_BUS:.0f}' reactive power QG={gen.QG:.3f} MVAr outside power dispatch limits ({gen.QMIN:.1f},{gen.QMAX:.3f}) MVAr")
+            if gen.QG != 0 and gen.QMAX < gen.QMIN \
+                    and not Fuzzy(gen.QMIN) <= gen.QG \
+                    and Fuzzy(gen.QG) <= gen.QMAX:
+                result.append(f"gen#{n}: generator at bus '{gen.GEN_BUS:.0f}' "
+                    f"reactive power QG={gen.QG:.3f} MVAr outside power "
+                    f"dispatch limits ({gen.QMIN:.1f},{gen.QMAX:.3f}) MVAr")
 
         # check DC lines
         if "dcline" in self.case:
@@ -1158,15 +1187,21 @@ def {self.name if not name else name}():
 
                 # check real power limits
                 if Fuzzy(dcline.PF) > dcline.PMAX:
-                    result.append(f"dcline#{n}: DC line real power {dcline.PF:.3f} MW exceeds maximum {dcline.PMAX:.3f} MW")
+                    result.append(f"dcline#{n}: DC line real power "
+                        f"{dcline.PF:.3f} MW exceeds maximum {dcline.PMAX:.3f} MW")
                 if Fuzzy(dcline.PF) < dcline.PMIN:
-                    result.append(f"dcline#{n}: DC line real power {dcline.PF:.3f} MW below minimum {dcline.PMIN:.3f} MW")
+                    result.append(f"dcline#{n}: DC line real power {dcline.PF:.3f} "
+                        f"MW below minimum {dcline.PMIN:.3f} MW")
 
                 # check reactive power limits
                 if not Fuzzy(dcline.QMINF) <= dcline.QF and Fuzzy(dcline.QF) <= dcline.QMAXF:
-                    result.append(f"dcline#{n}: DC line reactive power {dcline.QF:.3f} MVAr at 'from' end outside limits ({dcline.QMINF:.3f},{dcline.QMAXF:.3f}) MVAr")
+                    result.append(f"dcline#{n}: DC line reactive power "
+                        f"{dcline.QF:.3f} MVAr at 'from' end outside limits "
+                        f"({dcline.QMINF:.3f},{dcline.QMAXF:.3f}) MVAr")
                 if not Fuzzy(dcline.QMINT) <= dcline.QT and Fuzzy(dcline.QT) <= dcline.QMAXT:
-                    result.append(f"dcline#{n}: DC line reactive power {dcline.QT:.3f} MVAr at 'to' end outside limits ({dcline.QMINT:.3f},{dcline.QMAXT:.3f}) MVAr")
+                    result.append(f"dcline#{n}: DC line reactive power "
+                        f"{dcline.QT:.3f} MVAr at 'to' end outside limits "
+                        f"({dcline.QMINT:.3f},{dcline.QMAXT:.3f}) MVAr")
 
         return result
 
@@ -1184,27 +1219,27 @@ def {self.name if not name else name}():
         return PPGraph(self)
 
 if __name__ == '__main__':
-    
-    from ppsolver import PPSolver
-    
+
     pd.options.display.max_columns = None
     pd.options.display.width = None
     pd.options.display.max_rows = None
 
-    tests = sorted([x[4:-3] for x in os.listdir("../test") if x.startswith("case") and x.endswith(".py")])
+    tests = sorted([x[4:-3] for x in os.listdir("../test") \
+        if x.startswith("case") and x.endswith(".py")])
     errors = 0
     for caseid in tests:
 
         print(f"Running case{caseid}.py",end="... ",flush=True)
         try:
 
-            case = f"../test/case{caseid}.py"
-            test = PPModel(os.path.splitext(os.path.basename(case))[0],case=case)
+            test_case = f"../test/case{caseid}.py"
+            test = PPModel(os.path.splitext(os.path.basename(test_case))[0],case=test_case)
             solver = PPSolver(test)
 
+        # pylint: disable=broad-exception-caught
         except Exception as err:
 
-            print(f"ERROR [test/case{caseid}.py]: {err}, skipping it")
+            print(f"EXCEPTION [test/case{caseid}.py]: {err}, skipping it")
             errors += 1
             continue
 
@@ -1238,4 +1273,3 @@ if __name__ == '__main__':
         print(f"{errors} errors found!")
     else:
         print("No errors")
-
