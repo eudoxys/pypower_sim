@@ -17,12 +17,12 @@ flowchart LR
 
     subgraph pypower_sim
         PPModel --> PPSolver
-        PPModel --> PPPlots
+        PPModel ---> PPPlots
         input --> PPSolver
         PPSolver --> output[PPData]
     end
 
-    PPPlots ---> plots(png)
+    PPPlots --> plots(png)
     output --> outputs(csv)
 ```
 
