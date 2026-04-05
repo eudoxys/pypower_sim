@@ -1,0 +1,30 @@
+name: Analyze Code
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+
+  pypower:
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup python
+      uses: actions/setup-python@v4
+      with:
+        python-version: 3.12
+    
+    - name: Run pylint
+      run: |
+        cd pypower_sim
+        python3 -m venv .venv
+        source .venv/bin/activate
+        pip install --upgrade pip 1>/dev/null
+        pip install -r ../requirements.txt 1>/dev/null
+        pip install pylint 1>/dev/null
+        pylint --fail-under 0 *.py
