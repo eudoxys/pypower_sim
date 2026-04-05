@@ -654,16 +654,6 @@ if __name__ == "__main__":
     import os
 
     try:
-        import wecc240
-    except ModuleNotFoundError as err:
-        import os
-        if str(err) == "No module named 'wecc240'" \
-                and os.system("pip install git+https://github.com/eudoxys/wecc240") == 0:
-            import wecc240
-        else:
-            raise
-
-    try:
         # pylint: disable=ungrouped-imports
         from pypower_sim.ppmodel import PPModel
     except ModuleNotFoundError as err:
@@ -676,7 +666,6 @@ if __name__ == "__main__":
     for test in [x for x in os.listdir("../test") if x.startswith("case")]:
 
         print(f"Testing {test}...")
-        # module = getattr(wecc240,test)
         test_model = PPModel(name=test[:-3],case=f"../test/{test}")
 
         solver = PPSolver(test_model)
