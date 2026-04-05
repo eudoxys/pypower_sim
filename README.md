@@ -12,18 +12,20 @@ PyPOWER timeseries simulation
 ```mermaid
 flowchart LR
 
-    case(case) --> PPModel
-    inputs(csv) --> input[PPData]
+    case --> PPModel
+    input(csv) --> PPData
 
     subgraph pypower_sim
-        PPModel --> PPSolver
+        PPData <--> PPSolver
         PPModel ---> PPPlots
-        input --> PPSolver
-        PPSolver --> output[PPData]
+        PPModel ---> KML
     end
 
-    PPPlots --> plots(png)
-    output --> outputs(csv)
+    PPModel <--> PPSolver
+    PPData ----> output(csv)
+
+    PPPlots --> png
+    KML --> kml
 ```
 
 ## Installation
