@@ -1,4 +1,5 @@
-[![validate](https://github.com/eudoxys/pypower_sim/actions/workflows/validate.yaml/badge.svg)](https://github.com/eudoxys/pypower_sim/actions/workflows/validate.yaml)
+[![validate](https://github.com/eudoxys/pypower_sim/actions/workflows/validate.yaml/badge.svg?branch=main)](https://github.com/eudoxys/pypower_sim/actions/workflows/validate.yaml) 
+[![pages-build-deployment](https://github.com/eudoxys/pypower_sim/actions/workflows/pages/pages-build-deployment/badge.svg)](https://github.com/eudoxys/pypower_sim/actions/workflows/pages/pages-build-deployment)
 
 For full documentation see https://www.eudoxys.com/pypower_sim.
 
