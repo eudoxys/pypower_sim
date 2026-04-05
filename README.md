@@ -22,7 +22,7 @@ flowchart LR
         PPSolver --> output[PPData]
     end
 
-    PPPlots --> plots(png)
+    PPPlots ---> plots(png)
     output --> outputs(csv)
 ```
 
