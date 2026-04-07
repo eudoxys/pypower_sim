@@ -183,6 +183,13 @@ class KML:
                         print(f"    <styleUrl>#{data['style']}</styleUrl>",file=fh)
                     print(f"""    <Point><coordinates>{','.join(f'{x}'
                         for x in data['position'])}</coordinates></Point>""",file=fh)
+                    details = [
+                        f"<TR><TH>{x}</TH><TD>{y}</TD></TR>"
+                        for x,y in data['data'].items()
+                    ]
+                    print(f"""    <description><![CDATA[
+    <TABLE>      {"\n      ".join(details)}</TABLE>
+    ]]></description>""",file=fh)
                     print("  </Placemark>",file=fh)
 
                 # output lines
@@ -206,3 +213,19 @@ class KML:
                 print("</kml>""",file=fh)
 
         self.kmlfile = None
+
+if __name__ == "__main__":
+
+    import pandas as pd
+    from ppmodel import PPModel
+    from ppgis import PPGIS
+
+    test_model = PPModel(case="../test/case240_2018m.py")
+    gis_data = pd.read_csv("../test/case240_gis.csv")
+    PPGIS(test_model,gis_data)
+    
+    assert test_model.has("gis"), f"{test_model.name} has no GIS data"
+
+    test_model.save_kml("../test/case240_2018m.kml")
+    if os.system("open ../test/case240_2018m.kml"):
+        raise RuntimeError("unable to open KML file")

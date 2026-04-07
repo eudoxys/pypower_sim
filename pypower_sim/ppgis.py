@@ -3,6 +3,7 @@
 from typing import TypeVar
 import pandas as pd
 from geohash import geohash
+from kml import KML
 
 class idx_gis:
     """Provide column index values for GIS data"""
@@ -108,9 +109,9 @@ class PPGIS:
 
         # check updates requested
         if update is None:
-            update = set()
+            update = valid_updates
         assert isinstance(update,set), "update must be a set or None"
-        assert valid_updates - update == set(), f"update={{{valid_updates - update}}} " +\
+        assert valid_updates - update == set(), f"update={repr(valid_updates - update)} " +\
             f"is not valid (must be one of {valid_updates})"
 
         # update geohash

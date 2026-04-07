@@ -679,11 +679,13 @@ def {self.name if not name else name}():
             )
 
         # bus markers
+        busdata = self.get_data("bus").set_index("BUS_I")
         for bus_i,latitude,longitude,geocode in self.case["gis"][:,0:4]:
             kml.add_marker(
                 name=geocode if use_geocode else f"{bus_i}",
                 style="node",
                 position=[longitude,latitude,0.0],
+                data=busdata.loc[bus_i]
                 )
 
         # line style
@@ -957,6 +959,21 @@ def {self.name if not name else name}():
             "Load substations": len(loadgis[loadgis.PD>0].GEOHASH.unique()),
             }
 
+    def has(self,name:str) -> bool:
+        """Determine whether the model has the specified data
+
+        Arguments
+        ---------
+
+        - `name`: the name of the data item
+
+        Returns
+        -------
+
+        `bool`: True if the data item is in the model
+        """
+        return name in self.case
+        
     def get_data(self,name) -> pd.DataFrame:
         """Get data table with data types
 
