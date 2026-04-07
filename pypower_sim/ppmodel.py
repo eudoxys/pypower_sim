@@ -680,12 +680,13 @@ def {self.name if not name else name}():
 
         # bus markers
         busdata = self.get_data("bus").set_index("BUS_I").sort_index()
-        for bus_i,latitude,longitude,geocode in self.case["gis"][:,0:4]:
+        for bus_i,latitude,longitude,geocode,name in self.case["gis"][:,:5]:
             kml.add_marker(
                 name=geocode if use_geocode else f"{bus_i}",
                 style="node",
                 position=[longitude,latitude,0.0],
-                data=busdata.loc[bus_i]
+                data=busdata.loc[[bus_i]].iloc[0],
+                gis={"geocode":geocode,"name":name},
                 )
 
         # line style
@@ -702,27 +703,37 @@ def {self.name if not name else name}():
 
         # line paths
         branchdata = self.get_data("branch").set_index(["F_BUS","T_BUS"]).sort_index()
-        gis = {n:(y,x,0,c) for n,x,y,c in self.case["gis"][:,:4]}
+        gis = {n:(y,x,0,c,a) for n,x,y,c,a in self.case["gis"][:,:5]}
         for data in self.case["branch"]:
             fbus = int(data[idx_branch.F_BUS])
             tbus = int(data[idx_branch.T_BUS])
             status = int(data[idx_branch.BR_STATUS])
             kml.add_line(
-                name=f"{fbus}-{tbus}",
+                name=f"{fbus}→{tbus}",
                 style="line-in" if status else "line-out",
                 from_position=gis[fbus][0:3],
                 to_position=gis[tbus][0:3],
-                data=branchdata.loc[[(fbus,tbus)]].iloc[0]
+                data=branchdata.loc[[(fbus,tbus)]].iloc[0],
+                gis={
+                    "geocode": f"{gis[fbus][3]}&nbsp;&rarr;&nbsp;{gis[tbus][3]}",
+                    "name": f"{gis[fbus][4]}&nbsp;&rarr;&nbsp;{gis[tbus][4]}",
+                    },
                 )
+        dcline = self.get_data("dcline").set_index(["F_BUS","T_BUS"]).sort_index()
         for data in self.case["dcline"]:
             fbus = int(data[idx_branch.F_BUS])
             tbus = int(data[idx_branch.T_BUS])
             status = int(data[idx_branch.BR_STATUS])
             kml.add_line(
-                name=f"{fbus}-{tbus}",
+                name=f"{fbus}→{tbus}",
                 style="line-in" if status else "line-out",
                 from_position=gis[fbus][0:3],
                 to_position=gis[tbus][0:3],
+                data=dcline.loc[[(fbus,tbus)]].iloc[0],
+                gis={
+                    "geocode": f"{gis[fbus][3]}&nbsp;&rarr;&nbsp;{gis[tbus][3]}",
+                    "name": f"{gis[fbus][4]}&nbsp;&rarr;&nbsp;{gis[tbus][4]}",
+                    },
                 )
 
         kml.close()

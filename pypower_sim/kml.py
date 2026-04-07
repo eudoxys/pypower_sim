@@ -188,8 +188,10 @@ class KML:
                             f"<TR><TH>{x}</TH><TD>{y}</TD></TR>"
                             for x,y in data['data'].items()
                         ]
+                        caption = f"""<CAPTION>{data["gis"]["name"]} ({data["gis"]["geocode"]})<HR/></CAPTION>""" \
+                            if "gis" in data else ""
                         print(f"""    <description><![CDATA[
-        <TABLE>      {"\n      ".join(details)}</TABLE>
+        <TABLE>{caption}      {"\n      ".join(details)}</TABLE>
         ]]></description>""",file=fh)
                     print("  </Placemark>",file=fh)
 
@@ -214,8 +216,10 @@ class KML:
                             f"<TR><TH>{x}</TH><TD>{y}</TD></TR>"
                             for x,y in data['data'].items()
                         ]
+                        caption = f"""<CAPTION>{data["gis"]["name"]}<BR/>({data["gis"]["geocode"]})<HR/></CAPTION>""" \
+                            if "gis" in data else ""
                         print(f"""    <description><![CDATA[
-        <TABLE>      {"\n      ".join(details)}</TABLE>
+        <TABLE>{caption}      {"\n      ".join(details)}</TABLE>
         ]]></description>""",file=fh)
                     print("  </Placemark>",file=fh)
                 print("</Document>",file=fh)
