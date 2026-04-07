@@ -679,7 +679,7 @@ def {self.name if not name else name}():
             )
 
         # bus markers
-        busdata = self.get_data("bus").set_index("BUS_I")
+        busdata = self.get_data("bus").set_index("BUS_I").sort_index()
         for bus_i,latitude,longitude,geocode in self.case["gis"][:,0:4]:
             kml.add_marker(
                 name=geocode if use_geocode else f"{bus_i}",
@@ -701,6 +701,7 @@ def {self.name if not name else name}():
             )
 
         # line paths
+        branchdata = self.get_data("branch").set_index(["F_BUS","T_BUS"]).sort_index()
         gis = {n:(y,x,0,c) for n,x,y,c in self.case["gis"][:,:4]}
         for data in self.case["branch"]:
             fbus = int(data[idx_branch.F_BUS])
@@ -711,6 +712,7 @@ def {self.name if not name else name}():
                 style="line-in" if status else "line-out",
                 from_position=gis[fbus][0:3],
                 to_position=gis[tbus][0:3],
+                data=branchdata.loc[[(fbus,tbus)]].iloc[0]
                 )
         for data in self.case["dcline"]:
             fbus = int(data[idx_branch.F_BUS])

@@ -183,13 +183,14 @@ class KML:
                         print(f"    <styleUrl>#{data['style']}</styleUrl>",file=fh)
                     print(f"""    <Point><coordinates>{','.join(f'{x}'
                         for x in data['position'])}</coordinates></Point>""",file=fh)
-                    details = [
-                        f"<TR><TH>{x}</TH><TD>{y}</TD></TR>"
-                        for x,y in data['data'].items()
-                    ]
-                    print(f"""    <description><![CDATA[
-    <TABLE>      {"\n      ".join(details)}</TABLE>
-    ]]></description>""",file=fh)
+                    if "data" in data:
+                        details = [
+                            f"<TR><TH>{x}</TH><TD>{y}</TD></TR>"
+                            for x,y in data['data'].items()
+                        ]
+                        print(f"""    <description><![CDATA[
+        <TABLE>      {"\n      ".join(details)}</TABLE>
+        ]]></description>""",file=fh)
                     print("  </Placemark>",file=fh)
 
                 # output lines
@@ -208,6 +209,14 @@ class KML:
                         for x in data['to_position'])}""",file=fh)
                     print("      </coordinates>",file=fh)
                     print("    </LineString>",file=fh)
+                    if "data" in data:
+                        details = [
+                            f"<TR><TH>{x}</TH><TD>{y}</TD></TR>"
+                            for x,y in data['data'].items()
+                        ]
+                        print(f"""    <description><![CDATA[
+        <TABLE>      {"\n      ".join(details)}</TABLE>
+        ]]></description>""",file=fh)
                     print("  </Placemark>",file=fh)
                 print("</Document>",file=fh)
                 print("</kml>""",file=fh)
