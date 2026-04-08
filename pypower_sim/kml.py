@@ -204,7 +204,7 @@ class KML:
                             for x in data['position'])}</coordinates></Point>""",file=fh)
                         if "popup" in data:
                             print("    <description>",file=fh)
-                            print("      <![CDATA[",file=fh)
+                            print("      <![CDATA[",end="",file=fh)
                             if "caption" in data:
                                 print(f"""{data["caption"]}""",file=fh)
                             details = [
@@ -236,7 +236,7 @@ class KML:
                         print("      </coordinates>",file=fh)
                         print("    </LineString>",file=fh)
                         if "popup" in data:
-                            print("    <description><![CDATA[",file=fh)
+                            print("    <description><![CDATA[",end="",file=fh)
                             if "caption" in data:
                                 print(f"""      {data["caption"]}""",file=fh)
                             details = [
