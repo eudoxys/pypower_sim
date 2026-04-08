@@ -3,7 +3,8 @@
 from typing import TypeVar
 import pandas as pd
 from geohash import geohash
-from kml import KML
+
+from pypower_sim.kml import KML
 
 class idx_gis:
     """Provide column index values for GIS data"""

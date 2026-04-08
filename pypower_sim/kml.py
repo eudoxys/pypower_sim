@@ -26,11 +26,12 @@ class KML:
 
     def __init__(self,
         kmlfile:str,
-        name:str=None
+        name:str=None,
         ):
         """Construct a KML file generator
 
-        # Arguments
+        Arguments
+        ---------
 
         - `kmlfile`: KML file name
 
@@ -65,7 +66,8 @@ class KML:
     def add_linestyle(self,name:str,**kwargs):
         """Add a line style
 
-        # Arguments:
+        Arguments
+        ---------
 
         - `name`: linestyle name
 
@@ -80,7 +82,8 @@ class KML:
     def add_markerstyle(self,name:str,**kwargs):
         """Add a marker style
 
-        # Arguments
+        Arguments
+        ---------
 
         - `name`: markerstyle name
 
@@ -93,7 +96,8 @@ class KML:
     def add_line(self,name:str,**kwargs):
         """Add a line entity
 
-        # Arguments
+        Arguments
+        ---------
 
         - `name`: line name
 
@@ -103,14 +107,19 @@ class KML:
 
         - `style`: line style
 
-        - `data`: line data
+        - `popup`: line popup data
+
+        - `caption`: line popup caption
+
+        - `folder`: line folder name
         """
         self.line[name] = kwargs
 
     def add_marker(self,name:str,**kwargs):
         """Add a marker entity
 
-        # Arguments
+        Arguments
+        ---------
 
         - `name`: marker name
 
@@ -118,14 +127,19 @@ class KML:
 
         - `style`: marker style
 
-        - `data`: marker data
+        - `popup`: marker popup data
+
+        - `caption`: marker popup caption
+
+        - `folder`: marker folder name
         """
         self.marker[name] = kwargs
 
     def add_folder(self,name:str,**kwargs):
         """@private Add a folder
 
-        # Arguments
+        Arguments
+        ---------
 
         - `name`: folder name
 
@@ -136,7 +150,8 @@ class KML:
     def close(self,write=True):
         """Close KML file
 
-        # Arguments
+        Arguments
+        ---------
 
         - `write`: enable output to `pypower_sim.kml.KML.kmlfile`
         """
@@ -175,53 +190,63 @@ class KML:
                     print("  </Style>",file=fh)
 
                 # output markers
-                for name,data in self.marker.items():
-                    print("  <Placemark>",file=fh)
-                    if name:
-                        print(f"    <name>{name}</name>""",file=fh)
-                    if "style" in data:
-                        print(f"    <styleUrl>#{data['style']}</styleUrl>",file=fh)
-                    print(f"""    <Point><coordinates>{','.join(f'{x}'
-                        for x in data['position'])}</coordinates></Point>""",file=fh)
-                    if "data" in data:
-                        details = [
-                            f"<TR><TH>{x}</TH><TD>{y}</TD></TR>"
-                            for x,y in data['data'].items()
-                        ]
-                        caption = f"""<CAPTION>{data["gis"]["name"]} ({data["gis"]["geocode"]})<HR/></CAPTION>""" \
-                            if "gis" in data else ""
-                        print(f"""    <description><![CDATA[
-        <TABLE>{caption}      {"\n      ".join(details)}</TABLE>
-        ]]></description>""",file=fh)
-                    print("  </Placemark>",file=fh)
+                groups = {x["folder"] for x in self.marker.values()}
+                for group in groups:
+                    print(f"""  <Folder><name>{group}</name>""",file=fh)
+
+                    for name,data in ((x,y) for x,y in self.marker.items() if y["folder"] == group):
+                        print("  <Placemark>",file=fh)
+                        if name:
+                            print(f"    <name>{name}</name>""",file=fh)
+                        if "style" in data:
+                            print(f"    <styleUrl>#{data['style']}</styleUrl>",file=fh)
+                        print(f"""    <Point><coordinates>{','.join(f'{x}'
+                            for x in data['position'])}</coordinates></Point>""",file=fh)
+                        if "popup" in data:
+                            print("    <description>",file=fh)
+                            print("      <![CDATA[",file=fh)
+                            if "caption" in data:
+                                print(f"""{data["caption"]}""",file=fh)
+                            details = [
+                                f"<TR><TH>{x}</TH><TD>{y}</TD></TR>"
+                                for x,y in data['popup'].items()
+                            ]
+                            print(f"""      <TABLE>{"\n      ".join(details)}""",file=fh)
+                            print("    </TABLE>]]></description>",file=fh)
+                        print("  </Placemark>",file=fh)
+                    print("""  </Folder>""",file=fh)
 
                 # output lines
-                for name,data in self.line.items():
-                    print("  <Placemark>",file=fh)
-                    if name:
-                        print(f"    <name>{name}</name>",file=fh)
-                    if "style" in data:
-                        print(f"    <styleUrl>#{data['style']}</styleUrl>",file=fh)
-                    print("    <LineString>",file=fh)
-                    print("      <tesselate>1</tesselate>",file=fh)
-                    print("      <coordinates>",file=fh)
-                    print(f"""      {','.join(f'{x}'
-                        for x in data['from_position'])}""",file=fh)
-                    print(f"""      {','.join(f'{x}'
-                        for x in data['to_position'])}""",file=fh)
-                    print("      </coordinates>",file=fh)
-                    print("    </LineString>",file=fh)
-                    if "data" in data:
-                        details = [
-                            f"<TR><TH>{x}</TH><TD>{y}</TD></TR>"
-                            for x,y in data['data'].items()
-                        ]
-                        caption = f"""<CAPTION>{data["gis"]["name"]}<BR/>({data["gis"]["geocode"]})<HR/></CAPTION>""" \
-                            if "gis" in data else ""
-                        print(f"""    <description><![CDATA[
-        <TABLE>{caption}      {"\n      ".join(details)}</TABLE>
-        ]]></description>""",file=fh)
-                    print("  </Placemark>",file=fh)
+                groups = {x["folder"] for x in self.line.values()}
+                for group in groups:
+                    print(f"""  <Folder><name>{group}</name>""",file=fh)
+                    for name,data in ((x,y) for x,y in self.line.items() if y["folder"] == group):
+                        print("  <Placemark>",file=fh)
+                        if name:
+                            print(f"    <name>{name}</name>",file=fh)
+                        if "style" in data:
+                            print(f"    <styleUrl>#{data['style']}</styleUrl>",file=fh)
+                        print("    <LineString>",file=fh)
+                        print("      <tesselate>1</tesselate>",file=fh)
+                        print("      <coordinates>",file=fh)
+                        print(f"""      {','.join(f'{x}'
+                            for x in data['from_position'])}""",file=fh)
+                        print(f"""      {','.join(f'{x}'
+                            for x in data['to_position'])}""",file=fh)
+                        print("      </coordinates>",file=fh)
+                        print("    </LineString>",file=fh)
+                        if "popup" in data:
+                            print("    <description><![CDATA[",file=fh)
+                            if "caption" in data:
+                                print(f"""      {data["caption"]}""",file=fh)
+                            details = [
+                                f"<TR><TH>{x}</TH><TD>{y}</TD></TR>"
+                                for x,y in data['popup'].items()
+                            ]
+                            print(f"""      <TABLE>{"\n      ".join(details)}""",file=fh)
+                            print("    </TABLE>]]></description>",file=fh)
+                        print("  </Placemark>",file=fh)
+                    print("""  </Folder>""",file=fh)
                 print("</Document>",file=fh)
                 print("</kml>""",file=fh)
 

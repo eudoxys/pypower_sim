@@ -678,15 +678,45 @@ def {self.name if not name else name}():
             url="https://maps.google.com/mapfiles/kml/pal3/icon49.png",
             )
 
+        # gen markers
+        gendata = self.get_data("gen").set_index("GEN_BUS").sort_index()
+        genbus = set(gendata.index)
+        for bus_i,latitude,longitude,geocode,name in (x for x in self.case["gis"][:,:5] if x[0] in genbus):
+            for _,gen in gendata.loc[[bus_i]].iterrows():
+                kml.add_marker(
+                    name=geocode if use_geocode else f"G-{bus_i}",
+                    style="node",
+                    position=[longitude,latitude,0.0],
+                    popup=gen,
+                    caption=f"{name.replace(' ','&nbsp;')}<BR/>({geocode})<HR/>",
+                    folder="Generator"
+                    )
+
+        # load markers
+        loaddata = self.get_data("bus").set_index("BUS_I").sort_index()
+        loaddata = loaddata.loc[loaddata.PD>0]
+        loadbus = set(loaddata.index)
+        for bus_i,latitude,longitude,geocode,name in (x for x in self.case["gis"][:,:5] if x[0] in loadbus):
+            for _,load in loaddata.loc[[bus_i]].iterrows():
+                kml.add_marker(
+                    name=geocode if use_geocode else f"L-{bus_i}",
+                    style="node",
+                    position=[longitude,latitude,0.0],
+                    popup=load,
+                    caption=f"{name.replace(' ','&nbsp;')}<BR/>({geocode})<HR/>",
+                    folder="Load"
+                    )
+
         # bus markers
         busdata = self.get_data("bus").set_index("BUS_I").sort_index()
-        for bus_i,latitude,longitude,geocode,name in self.case["gis"][:,:5]:
+        for bus_i,latitude,longitude,geocode,name in (x for x in self.case["gis"][:,:5] if x[0] not in genbus|loadbus):
             kml.add_marker(
-                name=geocode if use_geocode else f"{bus_i}",
+                name=geocode if use_geocode else f" N-{bus_i}",
                 style="node",
                 position=[longitude,latitude,0.0],
-                data=busdata.loc[[bus_i]].iloc[0],
-                gis={"geocode":geocode,"name":name},
+                popup=busdata.loc[[bus_i]].iloc[0],
+                caption=f"{name.replace(' ','&nbsp;')}<BR/>({geocode})<HR/>",
+                folder="Bus"
                 )
 
         # line style
@@ -713,11 +743,9 @@ def {self.name if not name else name}():
                 style="line-in" if status else "line-out",
                 from_position=gis[fbus][0:3],
                 to_position=gis[tbus][0:3],
-                data=branchdata.loc[[(fbus,tbus)]].iloc[0],
-                gis={
-                    "geocode": f"{gis[fbus][3]}&nbsp;&rarr;&nbsp;{gis[tbus][3]}",
-                    "name": f"{gis[fbus][4]}&nbsp;&rarr;&nbsp;{gis[tbus][4]}",
-                    },
+                popup=branchdata.loc[[(fbus,tbus)]].iloc[0],
+                caption=f"{gis[fbus][4].replace(' ','&nbsp;')}&nbsp;&rarr;&nbsp;{gis[tbus][4].replace(' ','&nbsp;')}<BR/>({gis[fbus][3]}&nbsp;&rarr;&nbsp;{gis[tbus][3]})<HR/>",
+                folder="Branch"
                 )
         dcline = self.get_data("dcline").set_index(["F_BUS","T_BUS"]).sort_index()
         for data in self.case["dcline"]:
@@ -729,11 +757,9 @@ def {self.name if not name else name}():
                 style="line-in" if status else "line-out",
                 from_position=gis[fbus][0:3],
                 to_position=gis[tbus][0:3],
-                data=dcline.loc[[(fbus,tbus)]].iloc[0],
-                gis={
-                    "geocode": f"{gis[fbus][3]}&nbsp;&rarr;&nbsp;{gis[tbus][3]}",
-                    "name": f"{gis[fbus][4]}&nbsp;&rarr;&nbsp;{gis[tbus][4]}",
-                    },
+                popup=dcline.loc[[(fbus,tbus)]].iloc[0],
+                caption=f"{gis[fbus][4].replace(' ','&nbsp;')}&nbsp;&rarr;&nbsp;{gis[tbus][4].replace(' ','&nbsp;')}<BR/>({gis[fbus][3]}&nbsp;&rarr;&nbsp;{gis[tbus][3]})<HR/>",
+                folder="DC Line"
                 )
 
         kml.close()
