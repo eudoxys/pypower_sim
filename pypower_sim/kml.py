@@ -258,12 +258,15 @@ if __name__ == "__main__":
     from ppmodel import PPModel
     from ppgis import PPGIS
 
-    test_model = PPModel(case="../test/case240_2018m.py")
-    gis_data = pd.read_csv("../test/case240_gis.csv")
-    PPGIS(test_model,gis_data)
-    
-    assert test_model.has("gis"), f"{test_model.name} has no GIS data"
+    for test_year in [2011,2018,2020]:
+        test_file = f"../test/case240_{test_year}m.py"
+        test_model = PPModel(case=test_file)
+        gis_data = pd.read_csv("../test/case240_gis.csv")
+        PPGIS(test_model,gis_data)
+        
+        assert test_model.has("gis"), f"{test_model.name} has no GIS data"
 
-    test_model.save_kml("../test/case240_2018m.kml")
-    if os.system("open ../test/case240_2018m.kml"):
-        raise RuntimeError("unable to open KML file")
+        test_kml = test_file.replace(".py",".kml")
+        test_model.save_kml(test_kml)
+        if os.system(f"open {test_kml}"):
+            raise RuntimeError("unable to open KML file")
