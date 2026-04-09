@@ -256,11 +256,13 @@ if __name__ == "__main__":
 
     import pandas as pd
     from ppmodel import PPModel
+    from ppsolver import PPSolver
     from ppgis import PPGIS
 
     for test_year in [2011,2018,2020]:
         test_file = f"../test/case240_{test_year}m.py"
         test_model = PPModel(case=test_file)
+        PPSolver(test_model).solve_pf()
         gis_data = pd.read_csv("../test/case240_gis.csv")
         PPGIS(test_model,gis_data)
         
