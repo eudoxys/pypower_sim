@@ -17,10 +17,10 @@ The following solvers are available:
     `pypower_sim.ppsolver.PPSolver.solve_opf`: solve optimal powerflow problem
     (DC or AC OPF).
 
-3. Optimal Sizing and Placement (OSP)
+3. Optimal Capacity Expansion (OCE)
 
-    `pypower_sim.ppsolver.PPSolver.solve_osp`: solve optimal sizing/placement
-    problem (OSP).
+    `pypower_sim.ppsolver.PPSolver.solve_oce`: solve optimal sizing/placement
+    problem (OCE).
 
 4. Time-series Simulation (QSTS)
 
@@ -57,8 +57,8 @@ from pypower.runopf import runopf as runacopf
 from pypower.ppoption import ppoption
 # pylint: disable=unused-import
 from pypower import idx_gen, idx_bus
+from pypower_sim._runoce import runoce, OceOptions
 # pylint: enable=unused-import
-from pypower_sim.runosp import runosp
 
 class PPSolver:
     """PyPOWER solver implementation"""
@@ -136,7 +136,7 @@ class PPSolver:
 
     # pylint: disable=too-many-branches,too-many-arguments,too-many-statements
     # pylint: disable=too-many-positional-arguments,too-many-locals
-    def solve_osp(self,
+    def solve_oce(self,
         options:dict[str:str|int|float|dict]|None=None,
         update:str='success',
         with_result:bool=False,
@@ -144,12 +144,12 @@ class PPSolver:
         capacitors:dict[str,float]=None,
         condensers:dict[str,float]=None,
         ):
-        """Solve the optimal sizing placement problem
+        """Solve the optimal capacity expansion problem
 
         # Arguments
 
         - `options`: specify problem options to enable/disable
-          (see `pypower_sim.runosp.OspConfig`)
+          (see `pypower_sim._runoce.OceOptions`)
 
         - `update`: when to update of model case data (must be in `
           {'always', 'success', 'failure', 'never'}`)
@@ -160,10 +160,10 @@ class PPSolver:
           generators
 
         - `capacitors`: default `gen`, `gencost`, and `roundup` values for new
-          generators
+          capacitors
 
         - `condensers`: default `gen`, `gencost`, and `roundup` values for new
-          generators
+          condensers
 
         # Returns
 
@@ -173,25 +173,8 @@ class PPSolver:
 
         # Description
 
-        The following construction `costs` may specified:
-
-        1. `capacitor`: specifies the capacitor addition cost in $/MVAr
-        (default `100`)
-
-        2. `condenser`: specifies the condenser addition cost in $/MVAr
-        (default `1000`)
-
-        3. `generation`: specifies the generation addition cost in $/MVA
-        (default `1000`)
-
-        4. `curtailment`: specifies the load curtailment cost in $/MW
-        (default `10000`)
-
-        Note that in general the costs should increase in the order presented
-        above, i.e., capacitors are the least costly and load curtailment is
-        the most costly.
-
-        ## Model Updates
+        The capacity expansion costs are provided as part of the OCE
+        `options`. See `pypower_sim._runoce.OceOptions` for details.
 
         The model is updated as follows:
 
@@ -256,7 +239,7 @@ class PPSolver:
                     },
                 "roundup":0,
                 }
-        result = runosp(self.model,config=options)
+        result = runoce(self.model.case,OceOptions(options) if options else None)
         status = result["status"]
         success = status == 1
         if ( success and update in ["always","success"] ) \
@@ -672,38 +655,33 @@ if __name__ == "__main__":
         else:
             print("OK")
 
+    # pylint: disable=ungrouped-imports
     import os
+    from pypower_sim.ppmodel import PPModel
 
-    try:
-        # pylint: disable=ungrouped-imports
-        from pypower_sim.ppmodel import PPModel
-    except ModuleNotFoundError as err:
-        import os
-        if str(err) == "No module named 'pypower_sim'" and os.system("pip install -e ..") == 0:
-            from pypower_sim.ppmodel import PPModel
-        else:
-            raise
-
-    for test in [x for x in os.listdir("../test") if x.startswith("case")]:
+    n_errors = 0
+    for test in [x for x in os.listdir("../test") if x.startswith("case") and x.endswith(".py")]:
 
         print(f"Testing {test}...")
         test_model = PPModel(name=test[:-3],case=f"../test/{test}")
 
         solver = PPSolver(test_model)
 
-        for problem,solution in {
-            "original model powerflow": solver.solve_pf,
-            "original model OPF": solver.solve_opf,
-            "original model OSP": solver.solve_osp,
-            "optimal model OPF": solver.solve_opf,
-            "optimal model PF": solver.solve_pf,
-            }.items():
+        for problem,solution,critical in (
+            ("original model powerflow",solver.solve_pf,False),
+            ("original model OPF",solver.solve_opf,False),
+            ("original model OCE",solver.solve_oce,True),
+            ("optimal model OPF",solver.solve_opf,True),
+            ("optimal model PF",solver.solve_pf,True),
+            ):
             print(f"  Solving {problem}",end="...",flush=True)
             if solution():
+                print(" OK",end=": ")
                 show_results(test_model)
+            elif critical:
+                n_errors += 1
+                print(f"\nERROR [{test}]: {problem} {solution.__name__}() failed ***")
             else:
-                print("ERROR:",solution.__name__,"failed")
-                # solver.model.options["VERBOSE"] = 3
-                # solver.model.options["OUT_ALL"] = 1
-                # solution()
-                # solver.model.options = solver.model.default_options
+                print("FAILED (non-critical)")
+
+    print(f"Done: {n_errors} errors")

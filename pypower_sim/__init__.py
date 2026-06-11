@@ -18,13 +18,13 @@ flowchart LR
         input --> PPSolver[<a href="pypower_sim/ppsolver.html" target="_blank">PPSolver</a>]
         PPModel <--> PPSolver
         PPModel -----> PPPlots[<a href="pypower_sim/ppplots.html" target="_blank">PPPlots</a>]
-        runosp <--> PPGraph[<a href="pypower_sim/ppgraph.html" target="_blank">PPGraph</a>]
+        runoce <--> PPGraph[<a href="pypower_sim/ppgraph.html" target="_blank">PPGraph</a>]
         PPModel -----> KML[<a href="pypower_sim/kml.html" target="_blank">KML</a>]
-        PPSolver <---> runosp[<a href="pypower_sim/runosp.html" target="_blank">runosp</a>]
+        PPSolver <---> runosp[<a href="pypower_sim/runosp.html" target="_blank">runoce</a>]
         PPSolver ----> outputs[<a href="pypower_sim/ppdata.html" target="_blank">PPData</a>]
     end
 
-    runosp <---> cvxpy[<a href="https://www.cvxpy.org/" target="_blank">cvxpy</a>]
+    runoce <---> cvxpy[<a href="https://www.cvxpy.org/" target="_blank">cvxpy</a>]
     subgraph pypower
         runpf[<a href="https://rwl.github.io/PYPOWER/api/pypower.runpf-module.html" target="_blank">runpf</a>]
         runopf[<a href="https://rwl.github.io/PYPOWER/api/pypower.runopf-module.html" target="_blank">runopf</a>]
@@ -175,6 +175,7 @@ from .ppgis import PPGIS
 from .ppgraph import PPGraph
 
 from ._fuzzy import Fuzzy
+from ._runoce import runoce, OceOptions
 from ._violations import violations
 
 def main(*args,**kwargs):

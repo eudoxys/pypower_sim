@@ -26,6 +26,7 @@ import os
 from time import time
 from copy import deepcopy as copy
 from collections import namedtuple
+from dataclasses import dataclass, field
 from warnings import warn
 
 import numpy as np
@@ -39,42 +40,73 @@ from pypower import idx_gen as gen
 from pypower import idx_cost as cost
 from pypower import idx_dcline
 dcline = namedtuple("dcline",idx_dcline.c.keys())(**idx_dcline.c)
-from pypower_sim._violations import violations
+from ._violations import violations
 
-pp_options = {"VERBOSE": 0, "OUT_ALL": 0}
-cvx_options = {"canon_backend": "SCIPY"}
+@dataclass(kw_only=True,eq=False,order=False)
+class OceOptions:
 
-def runoce(
-    data:dict,
-    costs:dict[str,float]=None,
-    margin:float=0.15,
-    allin:bool=False,
-    setpoints:float|bool|None=None,
-    smallangles:float|None=None,
-    **options) -> dict:
-    """Solve decoupled optimal capacity expansion problem
-    
-    Arguments
-    ---------
+    cvx: dict = field(default_factory=dict)
+    costs: dict[str,float] = field(default_factory=dict)
+    margin: float = 0.15
+    allin: bool = False
+    setpoints: float|bool|None = None
+    smallangles: float|list[float]|None = None
+    """
+    Properties
+    ----------
 
-    - `data`: `pypower` case data
+    - `cvx` CVXpy solver options
 
     - `costs`: capacity addition costs (per-unit generation cost)
       Valid costs are
+    
       - `"capacitor"`: cost of adding a capacitor (default is 0.1)
+    
       - `"condensor"`: cost of adding a condensor (default is 1.0)
+    
       - `"transformer"`: cost of increasing transformer capacity (default is 2.0)
+    
       - `"powerline"`: cost of increasing powerline capacity (default is 10.0)
 
     - `margin`: load margin for sizing
 
     - `allin`: enable use of all available resources
 
-    - `setpoints`: set voltage setpoints on generation busses
+    - `setpoints`: set voltage setpoints on generation busses (float or boolean)
 
-    - `smallangles`: restrict voltage angles to near zero
+    - `smallangles`: restrict voltage angles to near zero (float or array)
+    """
 
-    - `**options`: `cvxpy` solver options
+    def __post_init__(self):
+        def _setdefaults(item:dict,values:dict):
+            for key,value in values.items():
+                if key not in item:
+                    item[key] = value
+        _setdefaults(self.cvx,{
+                "canon_backend": "SCIPY",
+            })
+        _setdefaults(self.costs,{
+                "capacitor": 0.1, # $/MVAr
+                "condensor": 1.0, # $/MVAr
+                "transformer": 2.0, # $/MVA
+                "powerline": 5.0, # $/MVA
+            })
+
+def runoce(
+    data:dict,
+    options:OceOptions|None=None,
+    **kwargs
+    ) -> dict:
+    """Solve decoupled optimal capacity expansion problem
+    
+    Arguments
+    ---------
+
+    - `data`: `pypower` case data (see `pypower.casedata`)
+
+    - `options`: OCE solver options class (see `pypower_sim.runoce.OceOptions`)
+
+    - `**kwargs`: OCE solver options keyword (see `pypower_sim.runoce.OceOptions`)
 
     Returns
     -------
@@ -110,23 +142,8 @@ def runoce(
     tic = time()
 
     # default options
-    if "canon_backend" not in options:
-        options["canon_backend"] = "SCIPY"
-
-    # default costs, if needed
-    default_costs = { 
-            # all costs per-unit generation cost $/MW
-            "capacitor": 0.1, # $/MVAr
-            "condensor": 1.0, # $/MVAr
-            "transformer": 2.0, # $/MVA
-            "powerline": 5.0, # $/MVA
-        }
-    if costs is None:
-        costs = default_costs
-    else:
-        for key,value in default_costs.items():
-            if key not in costs:
-                costs[key] = value
+    if options is None or kwargs != {}:
+        options = OceOptions(kwargs) if kwargs else OceOptions()
 
     # model check
     assert "baseMVA" in data, "missing baseMVA value"
@@ -163,7 +180,7 @@ def runoce(
     shift = br[:,[branch.SHIFT]].flatten() * np.pi / 180
 
     br_status = br[:,[branch.BR_STATUS]].flatten()
-    if allin:
+    if options.allin:
         br_status[br_status==0] = 1
     err = np.where([x for x in br_status if x not in [0,1]])[0]
     assert len(err)==0, f"bus[{err},BR_STATUS] value is not in [0,1]"
@@ -191,7 +208,7 @@ def runoce(
     assert K > 0, "too few generators"
     gg = data["gen"]
     gi = np.array([bi[n] for n in gg[:,gen.GEN_BUS]])
-    if allin:
+    if options.allin:
         gg[:,gen.GEN_STATUS] = 1
     gs = gg[:,[gen.GEN_STATUS]]
     vg = cp.Parameter(shape=(K,1), value=gg[:,[gen.VG]], name="vg") # bus voltage setpoints
@@ -204,7 +221,7 @@ def runoce(
 
     # dc line parameters
     L = len(data["dcline"]) if "dcline" in data else 0
-    if allin:
+    if options.allin:
         data["dcline",dcline.BR_STATUS] = np.ones(K)
     if L > 0: # ignore DC line that are out of service
         dc_status = data["dcline"][:,dcline.BR_STATUS].flatten()
@@ -300,11 +317,11 @@ def runoce(
     # cost function
     cost = cp.sum(ap) # + cp.sum(aq)/10 # generation capacity costs
     cost += cp.sum( # capacity/condensor costs
-            ( costs["capacitor"] - costs["condensor"] ) * ac / 2
-            + ( costs["capacitor"] + costs["condensor"] ) * cp.abs(ac) / 2
+            ( options.costs["capacitor"] - options.costs["condensor"] ) * ac / 2
+            + ( options.costs["capacitor"] + options.costs["condensor"] ) * cp.abs(ac) / 2
             )
-    cost += costs["powerline"] * cp.sum(al[powerlines]) # powerline costs
-    cost += costs["transformer"] * cp.sum(al[transformers]) # transformer costs
+    cost += options.costs["powerline"] * cp.sum(al[powerlines]) # powerline costs
+    cost += options.costs["transformer"] * cp.sum(al[transformers]) # transformer costs
 
     # constraints
     constraints = [
@@ -335,13 +352,13 @@ def runoce(
     # dc lines
     if L == 0:
         constraints += [ # line flows without DC lines
-            f @ pf + pd*(1+margin) == g @ pg, # Equation (2a)
-            f @ qf + qd*(1+margin) + ac == g @ qg, # Equation (2b)
+            f @ pf + pd*(1+options.margin) == g @ pg, # Equation (2a)
+            f @ qf + qd*(1+options.margin) + ac == g @ qg, # Equation (2b)
             ]
     else:
         constraints += [ # line flows with DC lines
-            f @ pf + pd*(1+margin) + df @ dpf == g @ pg + dt @ dpt, # Equation (2a)
-            f @ qf + qd*(1+margin) + ac + df @ dqf == g @ qg + dt @ dqt, # Equation (2b)
+            f @ pf + pd*(1+options.margin) + df @ dpf == g @ pg + dt @ dpt, # Equation (2a)
+            f @ qf + qd*(1+options.margin) + ac + df @ dqf == g @ qg + dt @ dqt, # Equation (2b)
             dpt == cp.multiply(1-da,dpf) - db, # DC losses
             # dpmin <= dpf, # non-zero not supported
             0 <= dpf, dpf <= dpmax, # real power DC "to" injection limits
@@ -350,19 +367,19 @@ def runoce(
             ]
 
     # small angle assumption
-    if not smallangles is None:
-        constraints.append(cp.abs(va) <= smallangles)  # +/- 10 degrees for decoupling assumptions to be valid
+    if not options.smallangles is None:
+        constraints.append(cp.abs(va) <= options.smallangles)  # +/- 10 degrees for decoupling assumptions to be valid
 
     # bus voltage setpoints
-    if isinstance(setpoints,float):
-        constraints.append(vm[ref] == setpoints)
-    elif setpoints is True:
+    if isinstance(options.setpoints,float):
+        constraints.append(vm[ref] == options.setpoints)
+    elif options.setpoints is True:
         constraints.append(vm[gi] == vg)
 
     # problem statement
     objective = cp.Minimize(cost)
     problem = cp.Problem(objective,constraints)
-    problem.solve(**options)
+    problem.solve(**options.cvx)
 
     # solution results
     result = {
@@ -418,7 +435,7 @@ def runoce(
         solution["bus"][:,bus.BS] = solution["bus"][:,bus.BS] + ac.value.T[0]
 
         # branch updates
-        if allin:
+        if options.allin:
             solution["branch"][:,branch.BR_STATUS] = np.ones(M)
         if solution["branch"].shape[1] <= branch.PF:
             solution["branch"] = np.append(solution["branch"],pf.value*puS,axis=1)
@@ -436,7 +453,7 @@ def runoce(
             solution["branch"][rows,column] = solution["branch"][rows,column] / ratio
         
         # generator updates
-        if allin:
+        if options.allin:
             solution["gen"][:,gen.GEN_STATUS] = np.ones(K)
         solution["gen"][:,[gen.PG]] = pg.value * puS
         solution["gen"][:,[gen.QG]] = qg.value * puS
@@ -489,6 +506,7 @@ if __name__ == "__main__":
 
     from ppmodel import PPModel
     from ppsolver import PPSolver
+    from _violations import violations
 
     path = "../test"
     n_error = 0
