@@ -137,7 +137,7 @@ class PPSolver:
     # pylint: disable=too-many-branches,too-many-arguments,too-many-statements
     # pylint: disable=too-many-positional-arguments,too-many-locals
     def solve_oce(self,
-        options:dict[str:str|int|float|dict]|None=None,
+        options:dict|None=None,
         update:str='success',
         with_result:bool=False,
         generators:dict[str,float]=None,

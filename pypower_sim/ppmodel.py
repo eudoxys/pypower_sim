@@ -258,7 +258,7 @@ class PPModel:
         self.name : str = name
         """Name of case"""
 
-        self.case : dict[str|int|np.array] = None
+        self.case : dict = None
         """Case data (see https://github.com/eudoxys/pypower)"""
 
         self.zone_kv : list[float] = None
