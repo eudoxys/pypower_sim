@@ -173,7 +173,9 @@ from .ppcli import PPCLI
 from .ppjson import PypowerModelDecoder, PypowerModelEncoder
 from .ppgis import PPGIS
 from .ppgraph import PPGraph
+
 from ._fuzzy import Fuzzy
+from ._violations import violations
 
 def main(*args,**kwargs):
     """Main command line processor

@@ -529,8 +529,8 @@ class PPSolver:
             "stop_test must be callable or None"
         assert isinstance(stop_on_fail,bool), \
             "stop_on_fail must be boolean"
-        assert isinstance(use_acopf,bool), \
-            "use_acopf must be boolean"
+        assert isinstance(use_acopf,bool) or use_acopf is None, \
+            "use_acopf must be boolean or None"
 
         self.model.errors = [] # collect errors, if any
         tic0 = time()
@@ -549,6 +549,11 @@ class PPSolver:
                 ):
             return None
 
+        # check if OPF data is available
+        opf_ok = "gencost" in self.model.case
+        if not opf_ok and not use_acopf is None:
+            warnings.warn("model has no gencost data -- OPF disabled")
+
         # start recorders
         for file,recorder in self.model.recorders.items():
             # pylint: disable=consider-using-with
@@ -563,6 +568,7 @@ class PPSolver:
             columns = ["timestamp"] + output["mapping"]["columns"]
             print(*columns,sep=",",file=output["fh"],flush=True)
 
+        event = "completed" # event if no other event occurs
         for t in (x.tz_convert("UTC") for x in trange):
 
             # setup time and progress/stop callback
@@ -572,26 +578,30 @@ class PPSolver:
                     errors=self.model.errors,
                     progress=(t-trange[0])/(trange[-1]-trange[0]),
                     ):
-                return None
+                event = "interrupted"
+                break
 
             # update inputs
             if self.update_inputs(t) > 0:
                 if call_on_fail:
                     call_on_fail("Input error")
                 if stop_on_fail:
+                    event = "failed"
                     break
 
             # solve OPF and check result
-            status,result = self.solve_opf(use_acopf,with_result=True)
-            if status is not True:
-                ts = t.strftime("%Y-%m-%d %H:%M:%S %Z")
-                failed = f"OPF failed at {ts}"
-                self.model.errors.append(failed)
-                if call_on_fail:
-                    call_on_fail(failed)
-                if stop_on_fail:
-                    break
-            topf += result["et"]
+            if opf_ok and not use_acopf is None:
+                status,result = self.solve_opf(use_acopf,with_result=True)
+                if status is not True:
+                    ts = t.strftime("%Y-%m-%d %H:%M:%S %Z")
+                    failed = f"OPF failed at {ts}"
+                    self.model.errors.append(failed)
+                    if call_on_fail:
+                        call_on_fail(failed)
+                    if stop_on_fail:
+                        event = "failed"
+                        break
+                topf += result["et"]
 
             # solver powerflow and check result
             status,result = self.solve_pf(with_result=True)
@@ -602,6 +612,7 @@ class PPSolver:
                 if call_on_fail:
                     call_on_fail(failed)
                 if stop_on_fail:
+                    event = "failed"
                     break
             tpf += result["et"]
 
@@ -610,12 +621,14 @@ class PPSolver:
                 if call_on_fail:
                     call_on_fail("Output error")
                 if stop_on_fail:
+                    event = "failed"
                     break
 
             # check stop condition
             niters += 1
             if stop_test and stop_test(t):
                 self.model.errors.append(f"Stopped at {t=}")
+                event = "stopped"
                 break
 
         ttot = time() - tic0
@@ -629,6 +642,14 @@ class PPSolver:
             "Total run time (s)": round(ttot,4),
             "Iteration time (s/iter)": round(ttot/niters,4) if niters > 0 else "N/A",
         }
+
+        if callable(progress) and progress(
+                timestamp=t,
+                event=event,
+                errors=self.model.errors,
+                progress=(t-trange[0])/(trange[-1]-trange[0]),
+                ):
+            return None
 
         return self.model.errors if self.model.errors else None
 

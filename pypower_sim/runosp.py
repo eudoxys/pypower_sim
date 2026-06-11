@@ -8,7 +8,7 @@ maximum load.
 
 For an $N$-bus and $M$-line network the problem is stated as
 
-$\underset{x,y,g,h,c,d}{\min} (c-\Re \hat{G}) \lfloor_0 ~ C_s + G_g~c + \frac12(C_c-C_d)~d + \frac12(C_c+C_d)~|d| + C_l ~ f + C_m ~ e$
+$\underset{x,y,g,h,c,d}{\min} (c-\Re \hat{G})_+ ~ C_s + C_g~c + \frac12(C_c-C_d)~d + \frac12(C_c+C_d)~|d| + C_l ~ f + C_m ~ e$
 
 subject to
 
@@ -179,8 +179,8 @@ class OspConfig:
         self.powerline_limit : float|list[float] = None
         """Powerline rating upgrade limit (in MW, defaults to `None`)"""
 
-        self.generation_constraint_cost : float = 1e9
-        """Relaxed generation constraint cost (defaults to 1e9 $/MW, `None` for hard constraints)"""
+        self.generation_constraint_cost : float = 1e3
+        """Relaxed generation constraint cost (defaults to 1e3 $/MW, `None` for hard constraints)"""
 
         self.cvx_solver = {
             "solver": "HIGHS",
@@ -401,6 +401,7 @@ def runosp(
 
         problem.solve(**config.cvx_solver)
         value = problem.value
+        # print(f"*** {problem.objective.value=} ***")
         if value is None:
             error = problem.status
         elif np.isinf(value):
@@ -471,7 +472,7 @@ if __name__ == "__main__":
         f"{'Time (s)':^8s}",f"{'Newgen (%MW)':^14s}",f"{'Savings (%MW)':^14s}")
     print("-"*20,*["-"*(len(x)+2) for x in testcalls],"--------","--------------","--------------")
     reportlist = []
-    for caseid in tests:
+    for caseid in ["4m"]: #tests:
         case = f"../test/case{caseid}.py"
         print(f"case{caseid}.py"," "*(20-len(caseid)-7),end="",flush=True)
 

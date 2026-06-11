@@ -90,7 +90,7 @@ class PPData:
         file:str,
         scale:float=1.0,
         offset:float=0.0,
-        mapping:dict=None,
+        mapping:dict|str|tuple[str,type]=None,
         ):
         """Set a time-series input data feed
 
@@ -106,7 +106,7 @@ class PPData:
 
         - `offset`: offset to apply to the scaled data
 
-        - `mapping`: maps column names to data rows with weights
+        - `mapping`: maps column names to data rows with weights, column name, or `(column,dtype)`
 
         # See also
 
@@ -128,6 +128,19 @@ class PPData:
                     "index": data.columns.astype(int),
                     "scale": np.ones(len(data.columns)),
                     }
+            elif isinstance(mapping,(str,tuple)): # map using column data
+                if isinstance(mapping,tuple):
+                    mapping,dtype = mapping
+                else:
+                    dtype = str
+                target = self.model.get_data(name)
+                assert mapping in target.columns, f"{mapping=} is not a valid columns name in {name} data"
+                maplist = data.columns.astype(dtype).values
+                mapdata = list(target[mapping].astype(dtype).values)
+                mapping = {
+                    "index": [mapdata.index(x) for x in maplist],
+                    "scale": np.ones(len(data.columns))
+                }
 
             # set up input
             self.model.inputs[(name,column)] = {
