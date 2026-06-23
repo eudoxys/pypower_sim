@@ -474,13 +474,13 @@ def runoce(
         updates = []
         for n,x in enumerate([x for x in ap.value[:,0]*puS]):
              if abs(x) > 1e-3:
-                updates.append(f"add {x:.3f} MW gen[{n},PMAX]")
+                updates.append(f"add {x:.3f} MW to gen[{n},PMAX]")
         for n,x in enumerate([x for x in aql.value[:,0]*puS]):
              if abs(x) > 1e-3:
-                updates.append(f"add {-x:.3f} MVAr gen[{n},QMIN]")
+                updates.append(f"add {-x:.3f} MVAr to gen[{n},QMIN]")
         for n,x in enumerate([x for x in aqh.value[:,0]*puS]):
              if abs(x) > 1e-3:
-                updates.append(f"add {x:.3f} MVAr gen[{n},QMAX]")
+                updates.append(f"add {x:.3f} MVAr to gen[{n},QMAX]")
         for n,x in enumerate([x for x in ac.value[:,0]*puS]):
              if abs(x) > 1e-3:
                 updates.append(f"add {x:.3f} MVAr to bus[{n},BS]")
