@@ -40,7 +40,11 @@ from pypower import idx_gen as gen
 from pypower import idx_cost as cost
 from pypower import idx_dcline
 dcline = namedtuple("dcline",idx_dcline.c.keys())(**idx_dcline.c)
-from ._violations import violations
+
+try:
+    from ._violations import violations
+except ImportError:
+    from _violations import violations
 
 @dataclass(kw_only=True,eq=False,order=False)
 class OceOptions:
@@ -135,7 +139,8 @@ def runoce(
       - `qg`: reactive power generation dispatch
       - `ac`: capacitors/condensors additions
       - `ap`: real power generation capacity expansions
-      - `aq`: reactive power generation capacity expansions
+      - `aql`: minimum reactive power generation capacity expansions
+      - `aqh`: maximum reactive power generation capacity expansions
       - `al`: transformer and powerline capacity expansions
     """
     
@@ -259,7 +264,8 @@ def runoce(
     # softened constraint variables
     ac = cp.Variable(shape=(N,1), name="ac") # capacitor/condensor additions
     ap = cp.Variable(shape=(K,1), name="ap", nonneg=True) # generator real power additions
-    aq = cp.Variable(shape=(K,1), name="aq", nonneg=True) # generator reactive power additions
+    aql = cp.Variable(shape=(K,1), name="aql", nonneg=True) # generator minimum reactive power additions
+    aqh = cp.Variable(shape=(K,1), name="aqh", nonneg=True) # generator maximum reactive power additions
     al = cp.Variable(shape=(M,1), name="al", nonneg=True) # powerline/transformer capacity additions
 
     # sanity checks
@@ -315,7 +321,7 @@ def runoce(
     transformers = list(set(range(M))- set(powerlines))
 
     # cost function
-    cost = cp.sum(ap) # + cp.sum(aq)/10 # generation capacity costs
+    cost = cp.sum(ap)
     cost += cp.sum( # capacity/condensor costs
             ( options.costs["capacitor"] - options.costs["condensor"] ) * ac / 2
             + ( options.costs["capacitor"] + options.costs["condensor"] ) * cp.abs(ac) / 2
@@ -332,7 +338,7 @@ def runoce(
 
         # Feasible Set 4
         pl <= pg, pg <= pu + ap, # Equation (3c)
-        ql - aq <= qg, qg <= qu + aq, # Equation (3d)
+        ql - aql <= qg, qg <= qu + aqh, # Equation (3d)
         cp.abs(pf) <= s + al, # Equation (4b)
         cp.abs(qf) <= s + al, 
         cp.abs(pf) + cp.abs(qf) <= 1.4 * ( s + al ),
@@ -345,8 +351,8 @@ def runoce(
         ac[gi] == 0, # no capacitors/condensors at generation busses
         
         # limits on reactive power additions relative to real power additions
-        cp.abs(qu) + aq <= pu + ap,
-        cp.abs(ql) + aq <= pu + ap,
+        cp.abs(qu) + aqh <= pu + ap,
+        cp.abs(ql) + aql <= pu + ap,
     ]
 
     # dc lines
@@ -422,7 +428,8 @@ def runoce(
             "qg (pu.MVAr)": qg.value.T[0],
             "ac (pu.MVAr)": ac.value.T[0],
             "ap (pu.MVAr)": ap.value.T[0],
-            "aq (pu.MVAr)": aq.value.T[0],
+            "aql (pu.MVAr)": aql.value.T[0],
+            "aqh (pu.MVAr)": aqh.value.T[0],
             "al (pu.MVAr)": al.value.T[0],
         }
 
@@ -458,8 +465,8 @@ def runoce(
         solution["gen"][:,[gen.PG]] = pg.value * puS
         solution["gen"][:,[gen.QG]] = qg.value * puS
         solution["gen"][:,[gen.PMAX]] = solution["gen"][:,[gen.PMAX]] + ap.value * puS
-        solution["gen"][:,[gen.QMIN]] = solution["gen"][:,[gen.QMIN]] - aq.value * puS
-        solution["gen"][:,[gen.QMAX]] = solution["gen"][:,[gen.QMAX]] + aq.value * puS
+        solution["gen"][:,[gen.QMIN]] = solution["gen"][:,[gen.QMIN]] - aql.value * puS
+        solution["gen"][:,[gen.QMAX]] = solution["gen"][:,[gen.QMAX]] + aqh.value * puS
 
         result["solution"] = solution
 
@@ -468,7 +475,10 @@ def runoce(
         for n,x in enumerate([x for x in ap.value[:,0]*puS]):
              if abs(x) > 1e-3:
                 updates.append(f"add {x:.3f} MW gen[{n},PMAX]")
-        for n,x in enumerate([x for x in aq.value[:,0]*puS]):
+        for n,x in enumerate([x for x in aql.value[:,0]*puS]):
+             if abs(x) > 1e-3:
+                updates.append(f"add {-x:.3f} MVAr gen[{n},QMIN]")
+        for n,x in enumerate([x for x in aqh.value[:,0]*puS]):
              if abs(x) > 1e-3:
                 updates.append(f"add {x:.3f} MVAr gen[{n},QMAX]")
         for n,x in enumerate([x for x in ac.value[:,0]*puS]):
