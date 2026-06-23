@@ -1,6 +1,7 @@
-# pypower case 'wecc240_2018' saved on 2026-04-03 10:36:11.985288
 from numpy import array
 def case240_2018m():
+    """WECC 240 model by Yuan et al."""
+
     return {
       'version': 2,
       'baseMVA': 100.0,
