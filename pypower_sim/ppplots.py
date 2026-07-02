@@ -38,7 +38,7 @@ class PPPlots:
         """`pypower_sim.ppmodel.PPModel` object"""
 
     def voltage(self,
-        figsize:tuple[int,int]=None,
+        figsize:tuple[int,int]|None=None,
         ) -> TypeVar('matplotlib.pyplot.figure'):
         """Generate voltage profile
 
@@ -78,7 +78,7 @@ class PPPlots:
         return fig
 
     def generation(self,
-        figsize:tuple[int,int]=None,
+        figsize:tuple[int,int]|None=None,
         ) -> TypeVar('matplotlib.pyplot.figure'):
         """Generate generation profile
 
@@ -118,7 +118,7 @@ class PPPlots:
         return fig
 
     def load(self,
-        figsize:tuple[int,int],
+        figsize:tuple[int,int]|None=None,
         ) -> TypeVar('matplotlib.pyplot.figure'):
         """Generate load profile
 

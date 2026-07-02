@@ -142,6 +142,11 @@ def runoce(
       - `aql`: minimum reactive power generation capacity expansions
       - `aqh`: maximum reactive power generation capacity expansions
       - `al`: transformer and powerline capacity expansions
+
+    Notes
+    -----
+
+    1. If `vg` is zero, then the generator has an unconstrained voltage setpoint.
     """
     
     tic = time()
@@ -305,10 +310,10 @@ def runoce(
 
     # gen vg range
     if min(vg.value) < 0.8 or max(vg.value) > 1.2:
-        for n in np.where(vg.value < 0.8)[0]:
-            warnings.append(f"gen[{n}].vg < 0.8")
+        for n in np.where((vg.value > 0) & (vg.value < 0.8))[0]:
+            warnings.append(f"gen[{n}].VG < 0.8")
         for n in np.where(vg.value > 1.2)[0]:
-            warnings.append(f"gen[{n}].vg > 1.2")
+            warnings.append(f"gen[{n}].VG > 1.2")
 
     # warn of check failures
     if warnings:
@@ -380,7 +385,9 @@ def runoce(
     if isinstance(options.setpoints,float):
         constraints.append(vm[ref] == options.setpoints)
     elif options.setpoints is True:
-        constraints.append(vm[gi] == vg)
+        vnz = np.where(vg.value>0)[0].flatten()
+        if len(vnz) > 0:
+            constraints.append(vm[gi[vnz]] == vg[vnz])
 
     # problem statement
     objective = cp.Minimize(cost)
@@ -467,6 +474,10 @@ def runoce(
         solution["gen"][:,[gen.PMAX]] = solution["gen"][:,[gen.PMAX]] + ap.value * puS
         solution["gen"][:,[gen.QMIN]] = solution["gen"][:,[gen.QMIN]] - aql.value * puS
         solution["gen"][:,[gen.QMAX]] = solution["gen"][:,[gen.QMAX]] + aqh.value * puS
+        if options.setpoints:
+            v0 = np.where(solution["gen"][:,gen.VG]==0)[0].flatten()
+            if len(v0) > 0:
+                solution["gen"][v0,gen.VG] = vm[v0].value.flatten()
 
         result["solution"] = solution
 

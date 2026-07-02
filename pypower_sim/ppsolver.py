@@ -143,7 +143,7 @@ class PPSolver:
         generators:dict[str,float]=None,
         capacitors:dict[str,float]=None,
         condensers:dict[str,float]=None,
-        ):
+        ) -> [bool,dict]:
         """Solve the optimal capacity expansion problem
 
         # Arguments
@@ -239,7 +239,7 @@ class PPSolver:
                     },
                 "roundup":0,
                 }
-        result = runoce(self.model.case,OceOptions(options) if options else None)
+        result = runoce(self.model.case,options)
         status = result["status"]
         success = status == 1
         if ( success and update in ["always","success"] ) \
@@ -361,8 +361,8 @@ class PPSolver:
                 self.model.case["bus"][newcap["BUS"],idx_bus.BS] += newcap["BS"]
 
         if with_result:
-            return status,result
-        return status
+            return success,result
+        return success
 
     def update_inputs(self,t:dt.datetime) -> int:
         """Synchronize inputs with the current date/time
@@ -439,6 +439,8 @@ class PPSolver:
         stop_on_fail:bool=True,
         stop_test:Callable=None,
         use_acopf:bool=True,
+        with_oce:OceOptions|None=None,
+        violations:list[str]|bool|None=None,
         **kwargs) -> str|list[str]|None:
         """Run a timeseries simulation
 
@@ -492,6 +494,10 @@ class PPSolver:
 
         - `use_acopf`: enable use of AC OPF instead of DC OPF
 
+        - `with_oce`: enable use of OCE solver during initialization
+
+        - `violations`: enable violations checks 
+
         - `**kwargs`: See `pandas.date_range(**kwargs)`
         
         # Returns
@@ -536,6 +542,45 @@ class PPSolver:
         opf_ok = "gencost" in self.model.case
         if not opf_ok and not use_acopf is None:
             warnings.warn("model has no gencost data -- OPF disabled")
+
+        # perform initial OCE if request
+        if not with_oce is None:
+            peak = None
+            for route,spec in self.model.inputs.items():
+                if route == ("bus","PD"):
+                    if peak is None:
+                        total = spec["data"].sum(axis=1)
+                        peak = total.max()
+                        peaktime = total[total==peak].index
+                    else:
+                        raise RuntimeError("more than one input routes to bus.PD")
+            if peak is None:
+                warnings.warn("no input routes to bus.PD")
+            else:
+                self.update_inputs(peaktime)
+                if not self.solve_opf(use_acopf=True) or not self.solve_pf():
+                    if callable(progress) and progress(
+                        timestamp=pd.DatetimeIndex(peaktime)[0],
+                        event="initial_oce",
+                        errors=self.model.errors,
+                        progress=0,
+                        ):
+                        return None
+                    if self.solve_oce(with_oce):
+                        self.model.errors.append("initial OCE failed")
+                        if stop_on_fail:
+                            return self.model.errors
+                if self.solve_opf(use_acopf=True) and self.solve_pf():
+                    if callable(progress) and progress(
+                        timestamp=pd.DatetimeIndex(peaktime)[0],
+                        event="peaktime_ok",
+                        errors=self.model.errors,
+                        progress=0,
+                        ):
+                        return None
+                    self.model.errors.append("initial OPF/PF failed")
+                    if stop_on_fail:
+                        return self.model.errors
 
         # start recorders
         for file,recorder in self.model.recorders.items():
@@ -606,6 +651,17 @@ class PPSolver:
                 if stop_on_fail:
                     event = "failed"
                     break
+
+            # violations check
+            if violations:
+                check = self.model.get_violations()
+                if check:
+                    self.model.errors.extend(check)
+                    if call_on_fail:
+                        call_on_fail("Violation error")
+                    if stop_on_fail:
+                        event = f"{len(check)} violations"
+                        break                
 
             # check stop condition
             niters += 1
