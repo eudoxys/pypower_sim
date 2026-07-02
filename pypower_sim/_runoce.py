@@ -311,7 +311,7 @@ def runoce(
     # gen vg range
     if min(vg.value) < 0.8 or max(vg.value) > 1.2:
         for n in np.where((vg.value > 0) & (vg.value < 0.8))[0]:
-            warnings.append(f"gen[{n}].VG < 0.8")
+            warnings.append(f"0.0 < gen[{n}].VG < 0.8")
         for n in np.where(vg.value > 1.2)[0]:
             warnings.append(f"gen[{n}].VG > 1.2")
 
