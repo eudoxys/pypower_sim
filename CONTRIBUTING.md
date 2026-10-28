@@ -6,8 +6,8 @@ how to report problems, propose changes, and submit pull requests.
 
 Read the [README](README.md) for what the package does, and the
 [documentation](https://www.eudoxys.com/pypower_sim) for how to use it.
-Maintainers and AI assistants should also read [CLAUDE.md](CLAUDE.md) and
-[MANIFEST.md](MANIFEST.md).
+Maintainers and AI assistants should also read [CLAUDE.md](CLAUDE.md),
+[DESIGN.md](DESIGN.md), and [MANIFEST.md](MANIFEST.md).
 
 ## Code of conduct
 
@@ -72,7 +72,8 @@ taking it.
        pip install --upgrade pip
        pip install -e . pytest
 
-3. Make your changes. Follow the conventions in [CLAUDE.md](CLAUDE.md);
+3. Make your changes. Follow the conventions in [CLAUDE.md](CLAUDE.md) and
+   the decisions in [DESIGN.md](DESIGN.md);
    match the existing code style and don't reformat code you aren't
    changing.
 4. Add or update tests in `pypower_sim/_test/` and run them:

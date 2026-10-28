@@ -8,10 +8,13 @@
 
 - [ ] CLI commands `plot`, `solve`, and `simulate`
 
-- [ ] Write `DESIGN.md` before building distributed generation (`ppdgen.py`)
-  and load modeling
+- [x] `DESIGN.md` written from the implementation (draft 1; needs maintainer
+  review)
 
-- [ ] Decide whether to stop tracking `docs/` (rebuilt by the Pages workflow)
+- [x] Stop tracking `docs/` (built by `make docs` and the Pages workflow)
+
+- [ ] Resolve the open questions in `DESIGN.md` (input interpolation,
+  players, OCE success criterion, distributed generation scope)
 
 - [ ] First release (`YEAR.MONTH.0`)
 
@@ -23,9 +26,12 @@
 
 - [ ] Fix `PPModel.set_case("call@file.py")`
 
+- [ ] Fix `PPData.set_player()` and the inverted initial-OCE error checks in
+  `run_timeseries`
+
 # Data
 
 - [ ] Provenance (source URL, retrieval date) for `_test/data/` cases and
-  the `examples/` CSV files
+  the `examples/` data (see the TODO in `examples/README.md`)
 
 - [ ] Remove unused `marimo` and `openpyxl` requirements, if confirmed unused

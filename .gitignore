@@ -205,3 +205,6 @@ cython_debug/
 marimo/_static/
 marimo/_lsp/
 __marimo__/
+
+# pdoc output (built by `make docs` and the Pages workflow)
+docs/

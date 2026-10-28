@@ -20,8 +20,10 @@ alpha maturity, version `0.0.0` (unreleased).
 
 - `MANIFEST.md`: map of every file, a task index, and what not to read.
   Read it first instead of listing folders.
-- There is no `DESIGN.md`; the package predates the convention. Write one
-  before adding a major subsystem (e.g. distributed generation in
+- `DESIGN.md`: the design as implemented, numbered decisions, known issues,
+  and open questions. It was written from the code (draft 1) and awaits
+  maintainer review; follow its decisions and ask before departing from one.
+  Update it before adding a major subsystem (e.g. distributed generation in
   `ppdgen.py`).
 
 Sibling Eudoxys dependencies:
@@ -82,18 +84,21 @@ non-editable, checks the manifest, runs pylint (informational) and pytest.
 - `ppdgen.py` is entirely commented out.
 - `marimo` and `openpyxl` are in `requirements.txt` but not imported.
 - `kml.py`'s `__main__` block calls macOS `open`.
-- `docs/` is committed although the Pages workflow regenerates it.
-- `examples/ca-*.csv` (~150 MB, ResStock-style end-use profiles) and
-  `examples/wecc_eia861.csv` have no provenance README.
+- `examples/ca-*.csv` (~150 MB, ResStock-style end-use profiles),
+  `examples/wecc_eia861.csv`, and `examples/wecc240.py` have no recorded
+  source; see the TODO in `examples/README.md`.
+- `PPData.set_player()` is broken and players are never usable; the initial
+  OCE branch of `run_timeseries` records errors on success (see `DESIGN.md`).
 - pandas emits `inplace` deprecation warnings from `ppgis.py`.
 
 ## Working rules
 
-- Don't commit generated output: test output goes to pytest temp folders;
+- Don't commit generated output (including `docs/`): test output goes to pytest temp folders;
   `.kml` files and plots from maintenance runs are gitignored.
 - `_test/data/` and `examples/` data are curated; don't regenerate or
   reformat them. Don't read the large `examples/*.csv`; use `head`.
 - When a public signature or output changes, update the module docstring,
-  the package docstring (`__init__.py`), and `README.md` in the same PR.
+  the package docstring (`__init__.py`), `README.md`, and `DESIGN.md` in the
+  same PR.
 - Update `MANIFEST.md` when adding, moving, or deleting files.
 - Conventional small test case: `_test/data/case9.py`.
