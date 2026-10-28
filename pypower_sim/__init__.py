@@ -1,5 +1,34 @@
 """PyPOWER timeseries simulation
 
+Syntax
+------
+
+    ppsim [-h] [-d] [-w] [--version] [-C CASE] FILENAME print
+
+Positional arguments
+--------------------
+
+  - `FILENAME`: `pypower` case file (a Python file defining a case function)
+
+  - `print`: print the case's bus, branch, generator, and cost tables
+
+Optional arguments
+------------------
+
+  - `-C|--case CASE`: case function name in `FILENAME` (default is the file
+    basename)
+
+  - `-d|--debug`: enable debug logging and traceback on exceptions
+
+  - `-h|--help`: show this help message and exit
+
+  - `--version`: show the package version and exit
+
+  - `-w|--warning`: enable warning messages from python
+
+Description
+-----------
+
 The `pypower_sim` package supports time-series simulation and optimizations
 using[`pypower`](https://github.com/rwl/pypower) and [`cvxpy`]
 (https://www.cvxpy.org/). The simulation accept `pypower` case files for the
@@ -9,7 +38,7 @@ Google Earth KML files, as shown below in Figure 1.
 ```mermaid
 flowchart LR
 
-    PPCLI[<a href="pypower_sim/ppcli.html" target="_blank">PPCLI</a>] --> pypower_sim
+    CLI[<a href="pypower_sim/cli.html" target="_blank">ppsim</a>] --> pypower_sim
     
     case[\\<a href="https://rwl.github.io/PYPOWER/api/pypower.caseformat-module.html" target="_blank">case</a>\\] --> PPModel[<a href="pypower_sim/ppmodel.html" target="_blank">PPModel</a>]
     inputs[\\csv\\] --> input[<a href="pypower_sim/ppdata.html" target="_blank">PPData</a>]
@@ -20,7 +49,7 @@ flowchart LR
         PPModel -----> PPPlots[<a href="pypower_sim/ppplots.html" target="_blank">PPPlots</a>]
         runoce <--> PPGraph[<a href="pypower_sim/ppgraph.html" target="_blank">PPGraph</a>]
         PPModel -----> KML[<a href="pypower_sim/kml.html" target="_blank">KML</a>]
-        PPSolver <---> runosp[<a href="pypower_sim/runosp.html" target="_blank">runoce</a>]
+        PPSolver <---> runosp[runoce]
         PPSolver ----> outputs[<a href="pypower_sim/ppdata.html" target="_blank">PPData</a>]
     end
 
@@ -43,7 +72,8 @@ sizing/placement solvers are available for `pypower` cases. The optimizers
 can be used to ensure that powerflow solutions are feasible and do not
 require load curtailment.
 
-# Description
+Model data
+----------
 
 The `pypower_sim.ppmodel.PPModel` class manages the `case` data structures
 needed by `pypower` solvers. Although users can access `case` data directly,
@@ -51,25 +81,49 @@ convenience methods such as `pypower_sim.ppmodel.PPModel.get_data` can be
 used to convert the `case` data to Pandas data frames where the columns are
 labeled according the `pypower` specifications.
 
-In addition, several items have been added to the `case` data structures to
-enable geographic data models, distributed generation modeling, and load
-modeling extensions. See `pypower_sim.ppgis.PPGIS`,
-`pypower_sim.ppdgen.PPDGen`, and `pypower_sim.ppload.PPLoad` for details.
+In addition, a `gis` item can be added to the `case` data structure to
+enable geographic data models. See `pypower_sim.ppgis.PPGIS` for details.
 
-# Installation
+What is not promised
+--------------------
 
-    python3 -m venv .venv
-    . .venv/bin/activate
+  - The command line implements only `print`; solving, plotting, and
+    time-series simulation are Python-only.
+
+  - The optimal capacity expansion solver (`PPSolver.solve_oce`) is
+    experimental: it currently returns `False` on all bundled test cases,
+    even when it proposes capacity updates.
+
+  - AC OPF does not converge for every case (e.g., `case240_2018m`), and
+    powerflow fails on `case4r` after its OPF.
+
+  - Distributed generation and load modeling extensions are planned but not
+    implemented (`pypower_sim.ppdgen` is a placeholder).
+
+  - JSON case files (`PPModel(case="file.json")`) are not supported; use
+    `PPModel.load()` for models saved with `PPModel.save()`.
+
+Installation
+------------
+
+Install using Eudoxys Package Manager:
+
+    pip install --upgrade eudoxys
+    epm install pypower_sim
+
+Install using `pip`:
+
     pip install git+https://github.com/eudoxys/pypower_sim
 
-# Examples
+Examples
+--------
 
 [Examples](https://github.com/eudoxys/pypower_sim/tree/main/examples) can be accessed by cloning the source code. They are not included
 in normal installations.
 
-## Preparation
+### Preparation
 
-Close the `pypower_sim` repository from GitHub
+Clone the `pypower_sim` repository from GitHub
 
     git clone https://github.com/eudoxys/pypower_sim
     pip install ./pypower_sim
@@ -78,14 +132,14 @@ Close the `pypower_sim` repository from GitHub
 
 Alternatively, you can download the files from https://github.com/eudoxys/pypower_sim/tree/main/examples.
 
-## Load a case
+### Load a case
 
     from pypower_sim import PPModel
     from wecc240 import wecc240
 
     model = PPModel(case=wecc240)
 
-## Run one-shot solvers
+### Run one-shot solvers
 
     from pypower_sim import PPSolver
 
@@ -95,14 +149,14 @@ Alternatively, you can download the files from https://github.com/eudoxys/pypowe
     solver.solve_pf(with_result=True)
 
 
-## Plot bus voltages
+### Plot bus voltages
 
     from pypower_sim import PPPlots
 
     plotter = PPPlots(model)
     plotter.voltage().savefig("wecc240_voltage.png")
 
-## Load time-series inputs, outputs, and recorders
+### Load time-series inputs, outputs, and recorders
 
     from pypower_sim import PPData
     data = PPData(model)
@@ -118,9 +172,9 @@ Alternatively, you can download the files from https://github.com/eudoxys/pypowe
     data.set_recorder("wecc240_cost.csv","cost",["cost"],
         scale=model.case['baseMVA'],formatting=".2f")
 
-## Run time-series solution
+### Run time-series solution
 
-    import datetime as tz
+    import datetime as dt
     import pytz
 
     start = dt.datetime(2020,7,31,17,0,0,0,pytz.UTC)
@@ -132,11 +186,13 @@ Alternatively, you can download the files from https://github.com/eudoxys/pypowe
         progress=print,
         )
 
-# See also
+See also
+--------
 
 - [Eudoxys PyPOWER Distribution](https://github.com/eudoxys/pypower)
 
-# Package information
+Package information
+-------------------
 
 - Source code: https://github.com/eudoxys/pypower_sim
 
@@ -161,7 +217,11 @@ Alternatively, you can download the files from https://github.com/eudoxys/pypowe
 ----
 """
 
-import sys
+try:
+    import importlib.metadata
+    __version__ = importlib.metadata.version("pypower_sim")
+except Exception: # pylint: disable=broad-exception-caught
+    __version__ = "dev"
 
 from .kml import KML
 from .ppdata import PPData
@@ -178,24 +238,4 @@ from ._fuzzy import Fuzzy
 from ._runoce import runoce, OceOptions
 from ._violations import violations
 
-def main(*args,**kwargs):
-    """Main command line processor
-
-    # Arguments
-
-    - `*args`: command line arguments (see `PPCLI`)
-
-    - `**kwargs`: command line processor options (see `PPCLI`)
-
-    # Returns
-
-    - `int`: exit code (see `PPCLI`)
-    """
-
-    cli = PPCLI(*args,**kwargs)
-
-    return cli.exitcode
-
-if __name__ == "__main__":
-
-    sys.exit(main())
+from .cli import main

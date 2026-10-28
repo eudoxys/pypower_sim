@@ -1,4 +1,7 @@
-"""PyPOWER Simulation CLI
+"""PyPOWER Simulation CLI (deprecated)
+
+Deprecated: use `pypower_sim.cli.main`, which is the `ppsim` entry point.
+`PPCLI` is kept for compatibility and will be removed in a separate PR.
 
 # Usage
     

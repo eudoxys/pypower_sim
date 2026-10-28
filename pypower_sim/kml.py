@@ -259,11 +259,12 @@ if __name__ == "__main__":
     from ppsolver import PPSolver
     from ppgis import PPGIS
 
+    test_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),"_test","data")
     for test_year in [2011,2018,2020]:
-        test_file = f"../test/case240_{test_year}m.py"
+        test_file = os.path.join(test_dir,f"case240_{test_year}m.py")
         test_model = PPModel(case=test_file)
         PPSolver(test_model).solve_pf()
-        gis_data = pd.read_csv("../test/case240_gis.csv")
+        gis_data = pd.read_csv(os.path.join(test_dir,"case240_gis.csv"))
         PPGIS(test_model,gis_data)
         
         assert test_model.has("gis"), f"{test_model.name} has no GIS data"

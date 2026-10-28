@@ -1,0 +1,5 @@
+# pypower_sim/.gitignore: generated output that must never be committed
+.cache*
+*_errors.csv
+_test/data/*.kml
+_test/output/

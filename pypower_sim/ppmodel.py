@@ -1282,7 +1282,8 @@ if __name__ == '__main__':
     pd.options.display.width = None
     pd.options.display.max_rows = None
 
-    tests = sorted([x[4:-3] for x in os.listdir("../test") \
+    test_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),"_test","data")
+    tests = sorted([x[4:-3] for x in os.listdir(test_dir) \
         if x.startswith("case") and x.endswith(".py")])
     errors = 0
     for caseid in tests:
@@ -1290,14 +1291,14 @@ if __name__ == '__main__':
         print(f"Running case{caseid}.py",end="... ",flush=True)
         try:
 
-            test_case = f"../test/case{caseid}.py"
+            test_case = os.path.join(test_dir,f"case{caseid}.py")
             test = PPModel(os.path.splitext(os.path.basename(test_case))[0],case=test_case)
             solver = PPSolver(test)
 
         # pylint: disable=broad-exception-caught
         except Exception as err:
 
-            print(f"EXCEPTION [test/case{caseid}.py]: {err}, skipping it")
+            print(f"EXCEPTION [_test/data/case{caseid}.py]: {err}, skipping it")
             errors += 1
             continue
 

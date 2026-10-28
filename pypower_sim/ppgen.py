@@ -36,6 +36,7 @@ Valid generator types and the corresponding fuels are the following
 If a fuel and generator type is not matched as above, then the costs are assumed zero.
 """
 
+import logging
 import warnings
 import pandas as pd
 import numpy as np
@@ -46,6 +47,8 @@ from pypower_sim.kml import KML
 GENDATA = ['state', 'county', 'node', 'bus', 'fuel', 'gen', 'operating_capacity',
        'index', 'variable_cost', 'fixed_cost']
 """Column names used by the `pypower_sim.ppgen.PPGen` class"""
+
+_logger = logging.getLogger(__file__)
 
 class PPGen:
     """Abstract class for generator data
@@ -242,7 +245,7 @@ class PPGen:
         data.reset_index(inplace=True)
         for key,value in exclude.items():
             if key in data.columns:
-                print(key,value)
+                _logger.debug("excluding %s in %s",key,value)
                 data.drop(data[data[key].isin(value)].index,inplace=True)
             else:
                 raise ValueError(f"{exclude=} is not valid")

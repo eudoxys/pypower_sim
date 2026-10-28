@@ -716,10 +716,11 @@ if __name__ == "__main__":
     from pypower_sim.ppmodel import PPModel
 
     n_errors = 0
-    for test in [x for x in os.listdir("../test") if x.startswith("case") and x.endswith(".py")]:
+    test_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)),"_test","data")
+    for test in [x for x in os.listdir(test_dir) if x.startswith("case") and x.endswith(".py")]:
 
         print(f"Testing {test}...")
-        test_model = PPModel(name=test[:-3],case=f"../test/{test}")
+        test_model = PPModel(name=test[:-3],case=os.path.join(test_dir,test))
 
         solver = PPSolver(test_model)
 
