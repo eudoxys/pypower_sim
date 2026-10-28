@@ -1,39 +1,52 @@
 [build-system]
-requires = ["setuptools", "setuptools-scm"]
+requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
-
-[project]
-name = "pypower_sim"
-version = "0.0.0"
-authors = [
-    { name = "David P. Chassin", email = "dchassin@eudoxys.com" }
-]
-maintainers = [
-    {name = "David P. Chassin <dpchassin@gmail.com>"},
-    ]
-description = "PyPOWER time-series simulator"
-readme = "README.md"
-requires-python = ">=3.10"
-keywords = ["eudoxys","pypower","simulation","quasi-steady","timeseries"]
-license = {text="MIT"}
-classifiers = [
-    "Programming Language :: Python :: 3",
-]
-dynamic = ["dependencies"]
 
 [tool.setuptools]
 packages = [
     "pypower_sim"
 ]
 
-[tool.setuptools.dynamic]
-dependencies = {file = "requirements.txt"}
+[tool.setuptools.package-data]
+# list every file pattern the package reads at run time
+pypower_sim = ["*.py"]
 
-[project.scripts]
-ppsim = "pypower_sim:main"
+[tool.setuptools.dynamic]
+dependencies = {file = ["requirements.txt"]}
+
+[project]
+name = "pypower_sim"
+version = "0.0.0" # 0.0.0 = unreleased (hidden by `epm index`)
+description = "PyPOWER time-series simulator"
+authors = [
+    { name = "David P. Chassin", email = "dchassin@eudoxys.com" }
+]
+maintainers = [
+    {name = "David P. Chassin <dpchassin@gmail.com>"},
+    ]
+readme = "README.md"
+requires-python = ">=3.12" # code uses PEP 701 f-strings; CI runs 3.12
+keywords = ["eudoxys","pypower","simulation","quasi-steady","timeseries"] # "eudoxys" marks an official Eudoxys release
+license-files = ["LICENSE"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Programming Language :: Python :: 3 :: Only",
+    "Topic :: Scientific/Engineering",
+    ]
+dynamic = ["dependencies"]
 
 [project.urls]
 Homepage = "https://github.com/eudoxys/pypower_sim"
 Documentation = "https://www.eudoxys.com/pypower_sim"
 Repository = "https://github.com/eudoxys/pypower_sim.git"
 Issues = "https://github.com/eudoxys/pypower_sim/issues"
+
+[project.scripts]
+ppsim = "pypower_sim.cli:main"
+
+[tool.pytest.ini_options]
+testpaths = ["pypower_sim/_test"]
+markers = [
+    "slow: runs the 240-bus WECC cases (tens of seconds)",
+    ]

@@ -4,10 +4,10 @@ To run this example do the following
 
 ## Clone the package
     
-    git clone git+https://github.com/eudoxys/pypower_sim
+    git clone https://github.com/eudoxys/pypower_sim
     python3 -m venv .venv
     . .venv/bin/activate
-    pip install pypower_sim
+    pip install ./pypower_sim
 
 ## Change to the examples folder
 
@@ -59,7 +59,7 @@ To run this example do the following
     
 ## Run time-series solution
 
-    import datetime as tz
+    import datetime as dt
     import pytz
 
     start = dt.datetime(2020,7,31,17,0,0,0,pytz.UTC)

@@ -529,7 +529,7 @@ if __name__ == "__main__":
     from ppsolver import PPSolver
     from _violations import violations
 
-    path = "../test"
+    path = os.path.join(os.path.dirname(os.path.abspath(__file__)),"_test","data")
     n_error = 0
     n_warning = 0
     for file in sorted([x for x in os.listdir(path) if x.startswith("case") and x.endswith(".py")]):
