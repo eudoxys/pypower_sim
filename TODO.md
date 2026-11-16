@@ -14,7 +14,10 @@
 - [x] Stop tracking `docs/` (built by `make docs` and the Pages workflow)
 
 - [ ] Resolve the open questions in `DESIGN.md` (input interpolation,
-  players, OCE success criterion, distributed generation scope)
+  OCE success criterion, distributed generation scope)
+
+- [x] Players implemented (`DESIGN.md` decision #14,
+  `pypower_sim.ppdata.PPData.set_player`)
 
 - [ ] First release (`YEAR.MONTH.0`)
 
@@ -26,8 +29,7 @@
 
 - [ ] Fix `PPModel.set_case("call@file.py")`
 
-- [ ] Fix `PPData.set_player()` and the inverted initial-OCE error checks in
-  `run_timeseries`
+- [ ] Fix the inverted initial-OCE error checks in `run_timeseries`
 
 # Data
 

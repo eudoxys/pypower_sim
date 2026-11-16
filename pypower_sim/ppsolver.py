@@ -387,6 +387,41 @@ class PPSolver:
                 errors += 1
         return errors
 
+    def update_players(self,t:dt.datetime) -> int:
+        """Synchronize players with the current date/time
+
+        # Arguments
+
+        - `t`: the current date/time
+
+        # Returns
+
+        - `int`: number of players that have no data at `t`
+        """
+        errors = 0
+        for file,spec in self.model.players.items():
+            name = spec["name"]
+            header = self.model.get_header(name)
+            target = self.model.case[name]
+            try:
+                values = spec["data"].loc[t]
+            except KeyError as exception:
+                warnings.warn(f"player({file=}) {exception=}")
+                errors += 1
+                continue
+            if isinstance(values,pd.DataFrame): # t is a list of timestamps
+                values = values.iloc[0]
+            for value,item in zip(values.values,spec["targets"]):
+                row = item["row"]
+                column_number = header.index(item["property"])
+                if item["part"] == "imag":
+                    target[row,column_number] = complex(target[row,column_number].real,value)
+                elif item["part"] == "real" and np.iscomplexobj(target):
+                    target[row,column_number] = complex(value,target[row,column_number].imag)
+                else:
+                    target[row,column_number] = value
+        return errors
+
     def update_outputs(self,
         t:dt.datetime,
         ts_format:str="%Y-%m-%d %H:%M:%S %Z"
@@ -558,6 +593,7 @@ class PPSolver:
                 warnings.warn("no input routes to bus.PD")
             else:
                 self.update_inputs(peaktime)
+                self.update_players(peaktime)
                 if not self.solve_opf(use_acopf=True) or not self.solve_pf():
                     if callable(progress) and progress(
                         timestamp=pd.DatetimeIndex(peaktime)[0],
@@ -613,6 +649,14 @@ class PPSolver:
             if self.update_inputs(t) > 0:
                 if call_on_fail:
                     call_on_fail("Input error")
+                if stop_on_fail:
+                    event = "failed"
+                    break
+
+            # update players
+            if self.update_players(t) > 0:
+                if call_on_fail:
+                    call_on_fail("Player error")
                 if stop_on_fail:
                     event = "failed"
                     break

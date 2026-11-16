@@ -44,8 +44,12 @@ Sibling Eudoxys dependencies:
 - Solver methods return `True`/`False` (optionally `(ok, result)` with
   `with_result=True`) and record problems in `PPModel.errors`; they don't
   raise on non-convergence.
-- `PPData` input CSVs are indexed by timestamp; columns are case row
-  numbers unless a `mapping` is given. Timestamps are UTC.
+- `PPData` input CSVs are indexed by timestamp (UTC). Input panels
+  (`set_input`) have one column per object (case row number unless a
+  `mapping` is given) and feed one property; players (`set_player`) have one
+  column per property of a parent object, or `OBJECTNAME.PROPERTYNAME`
+  (`.PROPERTYNAME.PART` for a part of a parent property). Players are kept
+  in `PPModel.players`, keyed by file.
 
 ## Style
 
@@ -87,8 +91,11 @@ non-editable, checks the manifest, runs pylint (informational) and pytest.
 - `examples/ca-*.csv` (~150 MB, ResStock-style end-use profiles),
   `examples/wecc_eia861.csv`, and `examples/wecc240.py` have no recorded
   source; see the TODO in `examples/README.md`.
-- `PPData.set_player()` is broken and players are never usable; the initial
-  OCE branch of `run_timeseries` records errors on success (see `DESIGN.md`).
+- The initial OCE branch of `run_timeseries` records errors on success
+  (see `DESIGN.md`).
+- `PPData.set_input(..., file=None)` is meant to remove an input but deletes
+  `inputs[name]` instead of `inputs[(name,column)]`, after an assert that
+  forbids an existing input.
 - pandas emits `inplace` deprecation warnings from `ppgis.py`.
 
 ## Working rules

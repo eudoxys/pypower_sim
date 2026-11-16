@@ -25,7 +25,10 @@ The following example constructs a new PyPower model and prints the case data.
   details.
 
 - `pypower_sim.ppmodel.PPModel.inputs`: Provides all the information required
-  to read data from input files and update `case` data.
+  to read data from input panels and update `case` data.
+
+- `pypower_sim.ppmodel.PPModel.players`: Provides all the information
+  required to read data from player files and update `case` data.
 
 - `pypower_sim.ppmodel.PPModel.outputs`: Provides all the information required
   to read `case` data and update the output files.
@@ -273,6 +276,9 @@ class PPModel:
         self.inputs : dict = {}
         """Time series mapped data inputs (see `pypower_sim.ppdata.PPData.set_input`)"""
 
+        self.players : dict = {}
+        """Time series object property players (see `pypower_sim.ppdata.PPData.set_player`)"""
+
         self.outputs : dict = {}
         """Time series mapped data outputs (see `pypower_sim.ppdata.PPData.set_output)"""
 
@@ -323,6 +329,7 @@ class PPModel:
             "case": self.case,
             "inputs": {("|".join(x) if isinstance(x,(tuple,list)) else x):y
                 for x,y in self.inputs.items()},
+            "players": self.players,
             "outputs": {("|".join(x) if isinstance(x,(tuple,list)) else x):y
                 for x,y in self.outputs.items()},
             "recorders": {("|".join(x) if isinstance(x,(tuple,list)) else x):y
@@ -460,6 +467,8 @@ class PPModel:
 
         self.inputs = {tuple(x.split("|")):PypowerModelDecoder(y)
             for x,y in data["inputs"].items()} if "inputs" in data else {}
+        self.players = {x:PypowerModelDecoder(y)
+            for x,y in data["players"].items()} if "players" in data else {}
         self.outputs = {x:PypowerModelDecoder(y)
             for x,y in data["outputs"].items()} if "outputs" in data else {}
         self.recorders = {x:PypowerModelDecoder(y)

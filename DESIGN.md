@@ -1,7 +1,7 @@
-# eudoxys/pypower_sim — package design (draft 1)
+# eudoxys/pypower_sim — package design (draft 2)
 
 Status: draft written from the existing implementation, 2026-10-28; not yet
-reviewed with the maintainer. It records what the code does now and the
+reviewed with the maintainer; players decided 2026-11-16 (#14). It records what the code does now and the
 decisions that behavior implies. Where the code is incomplete or inconsistent,
 the gap is listed under Known issues or Open questions, not settled as a
 decision.
@@ -42,10 +42,11 @@ maintainer's confirmation.
 | 7 | Solvers update `PPModel.case` in place, controlled by `update` (`always`, `success` (default), `failure`, `never`). |
 | 8 | Each time step solves OPF (AC by default, DC with `use_acopf=False`, skipped with `None` or when there is no `gencost`), then PF from the OPF result; outputs are written after PF. |
 | 9 | Time steps come from `pandas.date_range(*args,**kwargs)` and are converted to UTC; input rows are looked up by exact timestamp (no interpolation). |
-| 10 | Inputs and outputs are CSV files with a timestamp index and one column per case row (row number, not bus id) unless a `mapping` is given; values are `data * scale + offset`. |
+| 10 | Input panels and outputs are CSV files with a timestamp index and one column per case row (row number, not bus id) unless a `mapping` is given; values are `data * scale + offset`. |
 | 11 | Output files are opened at the start of a run and written one row per completed step, so partial runs leave usable files. |
 | 12 | OCE is a convex relaxation of OPF solved with `cvxpy` (method from `eudoxys/fast_oce`); it adds generation and dynamic var capacity only at non-PQ buses and static `BS` at PQ buses, and never adds branches. |
 | 13 | The CLI (`ppsim`) is a thin layer over `PPModel`; anything it does is also available from Python. |
+| 14 | (2026-11-16, maintainer) `PPData` distinguishes input panels from players. A panel (`set_input(name,column,file,...)`) is a frame with timestamp rows and one column per object (row of table `name`, by row number or `mapping`) and feeds one property. A player (`set_player(name,file,parent=None,...,mapping=None)`) is a frame with timestamp rows and one column per property of its parent object; a column `OBJECTNAME.PROPERTYNAME` targets another object of the same table instead, so `parent` is required only when a column has no `OBJECTNAME`. `PART` (`real`, `imag`) selects part of a complex property as `OBJECTNAME.PROPERTYNAME.PART`, or `.PROPERTYNAME.PART` for the parent (a leading `.` always means the parent). Players live in `PPModel.players`, keyed by file, persist in JSON, and are applied after inputs at each step. |
 
 ## Conventions inherited
 
@@ -70,7 +71,7 @@ pypower_sim/
   _violations.py  violations(data,precision,error): limit violations in a solved case
   _fuzzy.py       Fuzzy: float with tolerance comparisons
   # data I/O
-  ppdata.py       PPData(model): set_input, set_player, set_output, set_recorder
+  ppdata.py       PPData(model): set_input (panels), set_player, set_output, set_recorder
   ppgen.py        PPGen(source,cache): abstract generator-fleet source -> gen/gencost rows
   # outputs and analysis
   ppplots.py      PPPlots(model): voltage, generation, load profiles (matplotlib)
@@ -95,9 +96,9 @@ PPSolver(model)  PPData(model)  PPPlots(model)  PPGraph(model)  PPGIS(model,data
 
 | class | reads | writes |
 |---|---|---|
-| `PPModel` | case file/function/dict, JSON | `case`, `inputs`, `outputs`, `recorders`, `options`, `errors`, `profile` |
-| `PPData` | input CSVs | `model.inputs`, `model.outputs`, `model.recorders` |
-| `PPSolver` | `model.case`, `model.options`, inputs | `model.case` (per `update`), output/recorder CSVs, `model.errors`, `model.profile` |
+| `PPModel` | case file/function/dict, JSON | `case`, `inputs`, `players`, `outputs`, `recorders`, `options`, `errors`, `profile` |
+| `PPData` | input panel and player CSVs | `model.inputs`, `model.players`, `model.outputs`, `model.recorders` |
+| `PPSolver` | `model.case`, `model.options`, inputs, players | `model.case` (per `update`), output/recorder CSVs, `model.errors`, `model.profile` |
 | `PPGIS` | GIS CSV/DataFrame | `model.case["gis"]` |
 | `PPPlots` | `model.case` | matplotlib figures |
 | `PPGraph` | `model.case` (`bus`, `branch`) | sparse matrices, spectral results |
@@ -107,7 +108,7 @@ PPSolver(model)  PPData(model)  PPPlots(model)  PPGraph(model)  PPGIS(model,data
 | output | primary source | fallback | anchor/reconciliation |
 |---|---|---|---|
 | network, limits, costs | case file | `PPModel.default_model` (empty case) | none |
-| time-varying case values | `PPData` input CSVs | case values unchanged | none |
+| time-varying case values | `PPData` input panel and player CSVs | case values unchanged | none |
 | bus locations | GIS CSV via `PPGIS` | none (no `gis` key) | none |
 | generator fleet | `PPGen` subclass data | case `gen`/`gencost` | none |
 
@@ -116,11 +117,12 @@ PPSolver(model)  PPData(model)  PPPlots(model)  PPGraph(model)  PPGIS(model,data
 1. **Check** callbacks and options; clear `model.errors`; build the time
    range with `pandas.date_range`.
 2. **Optional initial OCE** (`with_oce=OceOptions(...)`): find the peak of the
-   single `bus.PD` input, apply inputs at that time, and if OPF or PF fails
+   single `bus.PD` input, apply inputs and players at that time, and if OPF or PF fails
    run OCE to add capacity.
 3. **Open** recorder and output files and write headers.
 4. **For each step (UTC):** apply inputs (`data.loc[t] * scale` into the
-   mapped case rows); solve OPF if enabled and `gencost` exists; solve PF;
+   mapped case rows), then players (each column into its object's
+   property); solve OPF if enabled and `gencost` exists; solve PF;
    write outputs and recorders; optionally check violations; call
    `progress`, `call_on_fail`, `stop_test` callbacks. With
    `stop_on_fail=True` (default) the first failure ends the run.
@@ -163,7 +165,7 @@ Key: `timestamp`; one column per recorded target (e.g. `cost`, scaled by
 - Case files: Python (`case<name>.py`, function `case<name>()`), as written
   by `PPModel.save_case()`.
 - Saved models: JSON (`PPModel.save()`), with `application`, `version`
-  (package version), `name`, `case`, `inputs`, `outputs`, `recorders`,
+  (package version), `name`, `case`, `inputs`, `players`, `outputs`, `recorders`,
   `options`.
 - Time series: CSV, timestamp first column; input timestamps must match the
   simulation steps exactly.
@@ -185,14 +187,16 @@ Key: `timestamp`; one column per recorded target (e.g. `cost`, scaled by
   updates; its success criterion needs review.
 - AC OPF does not converge on `case240_2018m`; PF fails on `case4r` after
   OPF.
-- `PPData.set_player()` fails before storing anything (`columns.values` is
-  a method, and `mapping` is undefined), so players are not usable although
-  the docs and the `run_timeseries` diagram describe them.
 - In `run_timeseries`'s initial OCE, `if self.solve_oce(...)` records
   "initial OCE failed" on success, and "initial OPF/PF failed" is recorded
   when OPF/PF succeed (both conditions appear inverted).
-- Input lookup by exact timestamp: a step missing from an input file is an
-  input error, not an interpolation.
+- Input lookup by exact timestamp: a step missing from an input panel or
+  player is an input error, not an interpolation.
+- Player object names are resolved to rows when the player is set; adding
+  or removing rows of that table afterwards is not tracked.
+- `PypowerModelDecoder` drops DataFrame column names, so saved inputs and
+  players rely on stored row mappings and column order (players store
+  their targets in column order for this reason).
 - `PPModel.set_case("call@file.py")` does not work as documented.
 - OCE ignores `PMIN > 0` (treated as zero; reported as a warning).
 - Assumption: a bus `BASE_KV` of zero is replaced by 230 kV
@@ -202,7 +206,8 @@ Key: `timestamp`; one column per recorded target (e.g. `cost`, scaled by
 
 1. Should `run_timeseries` interpolate or forward-fill inputs between
    timestamps, or keep exact matching?
-2. Should players be implemented or removed from `PPData`?
+2. ~~Should players be implemented or removed from `PPData`?~~ Resolved
+   2026-11-16: implemented (decision #14).
 3. What defines OCE success: the `cvxpy` status, a subsequent feasible
    OPF/PF, or no capacity added?
 4. Scope of the planned distributed generation (`ppdgen.py`) and load

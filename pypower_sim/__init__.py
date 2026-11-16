@@ -172,6 +172,16 @@ Alternatively, you can download the files from https://github.com/eudoxys/pypowe
     data.set_recorder("wecc240_cost.csv","cost",["cost"],
         scale=model.case['baseMVA'],formatting=".2f")
 
+`set_input` reads an input panel: one column per case row (or per `mapping`
+key) feeding one property, here bus `PD`. To drive several properties of one
+object, use a player, whose columns are properties of a parent object or
+`OBJECTNAME.PROPERTYNAME` for another object of the same table (e.g.
+branch ratings `RATE_A,RATE_B,4.RATE_A` with `parent=3`):
+
+    data.set_player("branch","branch_ratings.csv",parent=3)
+
+See `pypower_sim.ppdata.PPData.set_player` for the column name syntax.
+
 ### Run time-series solution
 
     import datetime as dt
