@@ -30,7 +30,7 @@ Update this file in the same PR that adds, moves, or deletes a file.
 | `pypower_sim/cli.py` | CLI `main()`, `load_case()` | entry point `ppsim`; tested by `_test/test_cli.py` |
 | `pypower_sim/ppmodel.py` | `PPModel` case data, `idx_*` indexes, save/load | tested by `_test/test_ppmodel.py`; `__main__` runs all test cases |
 | `pypower_sim/ppsolver.py` | `PPSolver` PF/OPF/OCE/time series | tested by `_test/test_ppsolver.py`, `_test/test_wecc240.py`; `__main__` runs all test cases |
-| `pypower_sim/ppdata.py` | `PPData` time-series inputs, outputs, recorders | tested by `_test/test_ppsolver.py::test_timeseries` |
+| `pypower_sim/ppdata.py` | `PPData` time-series input panels, players, outputs, recorders | tested by `_test/test_ppdata.py`, `_test/test_ppsolver.py::test_timeseries` |
 | `pypower_sim/ppgis.py` | `PPGIS`, `idx_gis` bus locations | tested by `_test/test_wecc240.py::test_gis` |
 | `pypower_sim/ppgen.py` | `PPGen` generator data from fleet tables | untested |
 | `pypower_sim/ppgraph.py` | `PPGraph` network graph/Laplacian analysis | untested; `__main__` demo |

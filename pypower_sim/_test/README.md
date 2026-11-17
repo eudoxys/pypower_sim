@@ -37,6 +37,20 @@ case files, and the `save()`/`load()` JSON round trip.
 
 	pytest pypower_sim/_test/test_ppmodel.py
 
+`test_ppdata.py`
+----------------
+
+Fast. `PPData` input panels and players on `case9`: input removal with
+`file=None`, player columns for the parent object,
+`OBJECTNAME.PROPERTYNAME` objects, `TABLE:` cross-table objects with
+`mappings`, `.PROPERTYNAME.PART`
+parts (`imag` only on complex data), `mapping` by column and dict, scale
+and offset, rejected column names, missing timesteps, players applied by
+`run_timeseries`, and the `save()`/`load()` round trip. Player CSVs are
+written to the temporary folder.
+
+	pytest pypower_sim/_test/test_ppdata.py
+
 `test_ppsolver.py`
 ------------------
 
