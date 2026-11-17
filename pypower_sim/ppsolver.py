@@ -400,9 +400,6 @@ class PPSolver:
         """
         errors = 0
         for file,spec in self.model.players.items():
-            name = spec["name"]
-            header = self.model.get_header(name)
-            target = self.model.case[name]
             try:
                 values = spec["data"].loc[t]
             except KeyError as exception:
@@ -412,8 +409,10 @@ class PPSolver:
             if isinstance(values,pd.DataFrame): # t is a list of timestamps
                 values = values.iloc[0]
             for value,item in zip(values.values,spec["targets"]):
+                name = item.get("name",spec["name"])
+                target = self.model.case[name]
                 row = item["row"]
-                column_number = header.index(item["property"])
+                column_number = self.model.get_header(name).index(item["property"])
                 if item["part"] == "imag":
                     target[row,column_number] = complex(target[row,column_number].real,value)
                 elif item["part"] == "real" and np.iscomplexobj(target):

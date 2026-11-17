@@ -40,8 +40,10 @@ case files, and the `save()`/`load()` JSON round trip.
 `test_ppdata.py`
 ----------------
 
-Fast. `PPData` input panels and players on `case9`: player columns for the
-parent object, `OBJECTNAME.PROPERTYNAME` objects, `.PROPERTYNAME.PART`
+Fast. `PPData` input panels and players on `case9`: input removal with
+`file=None`, player columns for the parent object,
+`OBJECTNAME.PROPERTYNAME` objects, `TABLE:` cross-table objects with
+`mappings`, `.PROPERTYNAME.PART`
 parts (`imag` only on complex data), `mapping` by column and dict, scale
 and offset, rejected column names, missing timesteps, players applied by
 `run_timeseries`, and the `save()`/`load()` round trip. Player CSVs are

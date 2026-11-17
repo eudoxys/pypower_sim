@@ -175,8 +175,9 @@ Alternatively, you can download the files from https://github.com/eudoxys/pypowe
 `set_input` reads an input panel: one column per case row (or per `mapping`
 key) feeding one property, here bus `PD`. To drive several properties of one
 object, use a player, whose columns are properties of a parent object or
-`OBJECTNAME.PROPERTYNAME` for another object of the same table (e.g.
-branch ratings `RATE_A,RATE_B,4.RATE_A` with `parent=3`):
+`OBJECTNAME.PROPERTYNAME` for another object of the same table, or
+`TABLE:OBJECTNAME.PROPERTYNAME` for an object of another table (e.g.
+branch ratings `RATE_A,RATE_B,4.RATE_A,gen:2.PMAX` with `parent=3`):
 
     data.set_player("branch","branch_ratings.csv",parent=3)
 

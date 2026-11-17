@@ -28,7 +28,8 @@ There are four types of data I/O available:
     contains time-series values for the ratings of a line is read with
     `pypower_sim.ppdata.PPData.set_player` to update the `RATE_A`, `RATE_B`,
     and `RATE_C` properties of that branch. A column can also name another
-    object of the same table using `OBJECTNAME.PROPERTYNAME`. See
+    object of the same table using `OBJECTNAME.PROPERTYNAME`, or an object
+    of another table using `TABLE:OBJECTNAME.PROPERTYNAME`. See
     `pypower_sim.ppdata.PPData.set_player` for the column name syntax.
 
 3. Outputs
@@ -63,12 +64,12 @@ There are four types of data I/O available:
         freq="1h",
         )
 
-where `branch_ratings.csv` contains the ratings of branch row 3 and the
-`RATE_A` rating of branch row 4:
+where `branch_ratings.csv` contains the ratings of branch row 3, the
+`RATE_A` rating of branch row 4, and the `PMAX` of generator row 2:
 
-    datetime,RATE_A,RATE_B,RATE_C,4.RATE_A
-    2020-08-01 07:00:00+00:00,250,250,250,300
-    2020-08-01 08:00:00+00:00,240,240,240,290
+    datetime,RATE_A,RATE_B,RATE_C,4.RATE_A,gen:2.PMAX
+    2020-08-01 07:00:00+00:00,250,250,250,300,180
+    2020-08-01 08:00:00+00:00,240,240,240,290,170
 """
 
 import os
@@ -103,13 +104,13 @@ class PPData:
     def set_input(self,
         # pylint: disable=too-many-arguments,too-many-positional-arguments
         name:str,
-        column:str,
-        file:str,
+        column:str|None,
+        file:str|None,
         scale:float=1.0,
         offset:float=0.0,
         mapping:dict|str|tuple[str,type]=None,
         ):
-        """Set a time-series input panel
+        """Set or remove a time-series input panel
 
         A panel is a CSV file whose first column holds the timestamps (UTC)
         and whose other columns are objects, i.e., rows of the `name` case
@@ -126,9 +127,12 @@ class PPData:
 
         - `name`: data set name (e.g., bus, branch)
 
-        - `column`: data column name (e.g., "PD")
+        - `column`: data column name (e.g., "PD"); may be `None` only when
+          `file` is `None`, to remove all the inputs of `name`
 
-        - `file`: file name from which data is input
+        - `file`: file name from which data is input, or `None` to remove the
+          input of `(name,column)` (or every input of `name` when `column` is
+          `None`)
 
         - `scale`: scaling factor to apply to input data
 
@@ -140,6 +144,11 @@ class PPData:
           `(column,dtype)` to convert those values before matching (default
           dtype is `str`)
 
+        # Exceptions
+
+        - `AssertionError`: invalid table or column, missing file, input
+          already defined, or removal of an input that is not defined
+
         # See also
 
         - `pypower_sim.ppmodel.PPModel.inputs`
@@ -147,11 +156,19 @@ class PPData:
         - `pypower_sim.ppdata.PPData.set_player`
         """
         assert name in self.model.standard_idx,f"{name=} is not valid"
-        assert column in self.model.get_header(name), f"{column=} is not found in {name} data"
-        assert (name,column) not in self.model.inputs, f"input({name=},{column=}) already defined"
         if file is None:
-            del self.model.inputs[name]
+            if column is None:
+                for key in [x for x in self.model.inputs if x[0] == name]:
+                    del self.model.inputs[key]
+            else:
+                assert (name,column) in self.model.inputs, \
+                    f"input({name=},{column=}) is not defined"
+                del self.model.inputs[(name,column)]
         else:
+            assert column in self.model.get_header(name), \
+                f"{column=} is not found in {name} data"
+            assert (name,column) not in self.model.inputs, \
+                f"input({name=},{column=}) already defined"
             assert os.path.exists(file), f"{file=} not found"
             data = pd.read_csv(file,index_col=[0],parse_dates=[0]) * scale + offset
             data.index.name = "datetime"
@@ -191,6 +208,7 @@ class PPData:
         scale:float=1.0,
         offset:float=0.0,
         mapping:dict|str|tuple[str,type]=None,
+        mappings:dict[str,dict|str|tuple[str,type]]=None,
         ):
         """Set a time-series player
 
@@ -214,9 +232,17 @@ class PPData:
           ambiguity of `PROPERTYNAME.PART` (which is read as
           `OBJECTNAME.PROPERTYNAME`)
 
-        Object names are case row numbers (not bus ids) unless `mapping` is
-        given. `OBJECTNAME` may itself contain `.`; the column name is split
-        from the right. The `imag` part can only be set on complex data
+        - `TABLE:OBJECTNAME.PROPERTYNAME` and
+          `TABLE:OBJECTNAME.PROPERTYNAME.PART`: property or part of a property
+          of the object `OBJECTNAME` in another case data table (e.g.,
+          `gen:2.PMAX` in a `branch` player)
+
+        Object names are case row numbers (not bus ids) unless a mapping is
+        given for their table (`mapping` for `name`, `mappings` for other
+        tables). `OBJECTNAME` may itself contain `.`; the column name is
+        split from the right. A `TABLE:` prefix is recognized only when
+        `TABLE` is a table in the case; otherwise the `:` is part of
+        `OBJECTNAME`. The `imag` part can only be set on complex data
         tables.
 
         # Arguments
@@ -237,6 +263,10 @@ class PPData:
           values are the object names (e.g., `"BUS_I"`), or `(column,dtype)`
           to convert those values before matching (default dtype is `str`)
 
+        - `mappings`: mappings of object names to rows for other tables,
+          keyed by table name (e.g., `{"gen":("GEN_BUS",int)}`), in the same
+          forms as `mapping`; `mapping` takes precedence for `name`
+
         # Exceptions
 
         - `AssertionError`: invalid table, file, column name, object name, or
@@ -255,26 +285,35 @@ class PPData:
         data = pd.read_csv(file,index_col=[0],parse_dates=[0]) * scale + offset
         data.index.name = "datetime"
 
-        header = self.model.get_header(name)
-        width = self.model.case[name].shape[1]
-        is_complex = np.iscomplexobj(self.model.case[name])
-        parent_row = None if parent is None else self._get_row(name,parent,mapping)
+        mappings = dict(mappings) if mappings else {}
+        for table in mappings:
+            assert table in self.model.standard_idx and table in self.model.case, \
+                f"mappings table {table!r} is not found in the case"
+        if mapping is not None:
+            mappings[name] = mapping
+        parent_row = None if parent is None else \
+            self._get_row(name,parent,mappings.get(name))
         targets = []
         for column in data.columns:
-            obj,prop,part = self._parse_player_column(str(column),header)
-            assert prop in header and header.index(prop) < width, \
-                f"player({file=}) column {column!r} property {prop!r} is not found in {name} data"
-            assert part != "imag" or is_complex, \
+            table,rest = self._split_table(str(column),name)
+            header = self.model.get_header(table)
+            obj,prop,part = self._parse_player_column(rest,header)
+            assert table == name or obj is not None, \
+                f"player({file=}) column {column!r} must name an object of {table} data"
+            assert prop in header and header.index(prop) < self.model.case[table].shape[1], \
+                f"player({file=}) column {column!r} property {prop!r} is not found in {table} data"
+            assert part != "imag" or np.iscomplexobj(self.model.case[table]), \
                 f"player({file=}) column {column!r} cannot set the imaginary part " \
-                f"of real {name} data"
+                f"of real {table} data"
             if obj is None:
                 assert parent_row is not None, \
                     f"player({file=}) column {column!r} requires a parent object"
                 row = parent_row
             else:
-                row = self._get_row(name,obj,mapping)
+                row = self._get_row(table,obj,mappings.get(table))
             targets.append({
                 "column": str(column),
+                "name": table,
                 "row": row,
                 "property": prop,
                 "part": part,
@@ -286,6 +325,14 @@ class PPData:
             "data": data,
             "targets": targets,
             }
+
+    def _split_table(self,column:str,name:str) -> tuple[str,str]:
+        """@private Split an optional `TABLE:` prefix from a player column name"""
+        if ":" in column:
+            table,rest = column.split(":",1)
+            if table in self.model.standard_idx and table in self.model.case:
+                return table,rest
+        return name,column
 
     @staticmethod
     def _parse_player_column(column:str,header:list[str]) -> tuple[str|None,str,str|None]:

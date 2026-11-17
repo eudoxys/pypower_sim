@@ -1,7 +1,7 @@
 # eudoxys/pypower_sim — package design (draft 2)
 
 Status: draft written from the existing implementation, 2026-10-28; not yet
-reviewed with the maintainer; players decided 2026-11-16 (#14). It records what the code does now and the
+reviewed with the maintainer; players decided 2026-11-16, revised 2026-11-17 (#14). It records what the code does now and the
 decisions that behavior implies. Where the code is incomplete or inconsistent,
 the gap is listed under Known issues or Open questions, not settled as a
 decision.
@@ -46,7 +46,7 @@ maintainer's confirmation.
 | 11 | Output files are opened at the start of a run and written one row per completed step, so partial runs leave usable files. |
 | 12 | OCE is a convex relaxation of OPF solved with `cvxpy` (method from `eudoxys/fast_oce`); it adds generation and dynamic var capacity only at non-PQ buses and static `BS` at PQ buses, and never adds branches. |
 | 13 | The CLI (`ppsim`) is a thin layer over `PPModel`; anything it does is also available from Python. |
-| 14 | (2026-11-16, maintainer) `PPData` distinguishes input panels from players. A panel (`set_input(name,column,file,...)`) is a frame with timestamp rows and one column per object (row of table `name`, by row number or `mapping`) and feeds one property. A player (`set_player(name,file,parent=None,...,mapping=None)`) is a frame with timestamp rows and one column per property of its parent object; a column `OBJECTNAME.PROPERTYNAME` targets another object of the same table instead, so `parent` is required only when a column has no `OBJECTNAME`. `PART` (`real`, `imag`) selects part of a complex property as `OBJECTNAME.PROPERTYNAME.PART`, or `.PROPERTYNAME.PART` for the parent (a leading `.` always means the parent). Players live in `PPModel.players`, keyed by file, persist in JSON, and are applied after inputs at each step. |
+| 14 | (2026-11-16, maintainer) `PPData` distinguishes input panels from players. A panel (`set_input(name,column,file,...)`) is a frame with timestamp rows and one column per object (row of table `name`, by row number or `mapping`) and feeds one property. A player (`set_player(name,file,parent=None,...,mapping=None)`) is a frame with timestamp rows and one column per property of its parent object; a column `OBJECTNAME.PROPERTYNAME` targets another object of the same table instead, so `parent` is required only when a column has no `OBJECTNAME`. `PART` (`real`, `imag`) selects part of a complex property as `OBJECTNAME.PROPERTYNAME.PART`, or `.PROPERTYNAME.PART` for the parent (a leading `.` always means the parent). A column `TABLE:OBJECTNAME.PROPERTYNAME[.PART]` targets an object of another case table (revised 2026-11-17); `mapping` resolves object names of `name` and `mappings` (keyed by table) those of other tables, otherwise names are row numbers. Players live in `PPModel.players`, keyed by file, persist in JSON, and are applied after inputs at each step. `set_input(name,column,None)` removes that input, and `set_input(name,None,None)` removes every input of `name`. |
 
 ## Conventions inherited
 

@@ -37,6 +37,23 @@ def test_input_panel(model):
     assert PPSolver(model).update_inputs(T0) == 0
     assert list(model.get_data("bus").loc[[1,2,3,6],"PD"]) == [20,40,60,80]
 
+def test_input_remove(model):
+    """`file=None` removes one input, or all inputs of a table with `column=None`"""
+    data = PPData(model)
+    data.set_input("bus","PD",f"{DATADIR}/load.csv")
+    data.set_input("bus","QD",f"{DATADIR}/load.csv")
+    data.set_input("gen","PG",f"{DATADIR}/load.csv")
+    data.set_input("bus","PD",None)
+    assert set(model.inputs) == {("bus","QD"),("gen","PG")}
+    with pytest.raises(AssertionError,match="not defined"):
+        data.set_input("bus","PD",None)
+    data.set_input("bus","PD",f"{DATADIR}/load.csv") # can be set again
+    data.set_input("bus",None,None)
+    assert set(model.inputs) == {("gen","PG")}
+    data.set_input("bus",None,None) # nothing left to remove
+    with pytest.raises(AssertionError,match="not found"):
+        data.set_input("bus",None,f"{DATADIR}/load.csv")
+
 def test_player_parent(model,workdir):
     """Plain column names are properties of the parent object"""
     file = write_player(workdir/"p.csv",["RATE_A","RATE_B"],[[100,110],[200,210]])
@@ -93,7 +110,33 @@ def test_player_imag(model,workdir):
     assert PPSolver(model).update_players(T0) == 0
     assert model.case["bus"][4,2] == complex(4,3)
 
+def test_player_cross_table(model,workdir):
+    """`TABLE:OBJECTNAME.PROPERTYNAME` targets an object of another table"""
+    columns = ["RATE_A","gen:2.PMAX","bus:4.PD.real","bus:x:y.QD"]
+    file = write_player(workdir/"p.csv",columns,[[11,22,33,44],[0,0,0,0]])
+    PPData(model).set_player("branch",file,parent=1,mappings={"bus":{"x:y":5,"4":4}})
+    assert PPSolver(model).update_players(T0) == 0
+    assert rate(model,1) == 11
+    assert model.get_data("gen").loc[2,"PMAX"] == 22
+    assert list(model.get_data("bus").loc[[4,5],["PD","QD"]].values.diagonal()) == [33,44]
+
+def test_player_cross_table_mapping(model,workdir):
+    """`mappings` resolves object names of other tables; `nosuch:` is part of the name"""
+    file = write_player(workdir/"p.csv",["gen:3.PMAX","bus:9.PD"],[[5,6],[0,0]])
+    PPData(model).set_player("branch",file,mappings={"gen":("GEN_BUS",int),"bus":"BUS_I"})
+    assert PPSolver(model).update_players(T0) == 0
+    assert model.get_data("gen").set_index("GEN_BUS").loc[3,"PMAX"] == 5
+    assert model.get_data("bus").set_index("BUS_I").loc[9,"PD"] == 6
+    file = write_player(workdir/"q.csv",["nosuch:1.RATE_A"],[[7],[0]])
+    PPData(model).set_player("branch",file,mapping={"nosuch:1":2})
+    assert PPSolver(model).update_players(T0) == 0
+    assert rate(model,2) == 7
+
 @pytest.mark.parametrize("columns,match",[
+    (["gen:PMAX"],"must name an object"),
+    (["gen:.PMAX"],"must name an object"),
+    (["gen:1.RATE_A"],"not found in gen"),
+    (["gen:9.PMAX"],"not in gen"),
     (["RATE_A"],"requires a parent"),
     (["RATE_A.real"],"ambiguous"),
     (["NOSUCH"],"not found"),

@@ -48,8 +48,10 @@ Sibling Eudoxys dependencies:
   (`set_input`) have one column per object (case row number unless a
   `mapping` is given) and feed one property; players (`set_player`) have one
   column per property of a parent object, or `OBJECTNAME.PROPERTYNAME`
-  (`.PROPERTYNAME.PART` for a part of a parent property). Players are kept
-  in `PPModel.players`, keyed by file.
+  (`.PROPERTYNAME.PART` for a part of a parent property, and
+  `TABLE:OBJECTNAME.PROPERTYNAME` for another table). Players are kept in
+  `PPModel.players`, keyed by file. `set_input(name,column,None)` removes an
+  input; `set_input(name,None,None)` removes all inputs of `name`.
 
 ## Style
 
@@ -93,9 +95,6 @@ non-editable, checks the manifest, runs pylint (informational) and pytest.
   source; see the TODO in `examples/README.md`.
 - The initial OCE branch of `run_timeseries` records errors on success
   (see `DESIGN.md`).
-- `PPData.set_input(..., file=None)` is meant to remove an input but deletes
-  `inputs[name]` instead of `inputs[(name,column)]`, after an assert that
-  forbids an existing input.
 - pandas emits `inplace` deprecation warnings from `ppgis.py`.
 
 ## Working rules
