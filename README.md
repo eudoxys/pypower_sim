@@ -125,6 +125,6 @@ Run the time-series solution:
     end = dt.datetime(2020,8,1,16,0,0,0,pytz.UTC)
     solver.run_timeseries(start=start,end=end,freq="1h")
 
-# Acknowledgments
+## Acknowledgments
 
-- This material is based on work supported by the U.S. Department of Energy’s Office of Electricity through a grant from the Grid Controls and Communications Division
+- This work was authored in part for the U.S. Department of Energy (DOE) by the National Laboratory of the Rockies under Contract No. DE-AC36-08GO28308 through a grant from the Grid Controls and Communications Devision and by Lawrence Livermore National Laboratory under Contract DE-AC52-07NA27344 through a grant from the Advanced Grid Modeling Program.
